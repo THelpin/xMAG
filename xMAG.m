@@ -155,15 +155,28 @@ derivative covd.";
 TFDistortion::usage =
 	"TFDistortion[covd] returns the Traceless distortion tensor associated to a connection covd acting on a tangent bundle.";
 TFDistortionToDistortion::usage="TFDistortionToDistortion[expr, covd] expands expr expressing all TFDistortion tensors of covd in terms\
- of the Distortion and other tensors of covd.";
+ of the Distortion of covd.";
 DistortionToTFDistortion::usage="DistortionToTFDistortion[expr, covd] expands expr expressing all Distortion tensors of covd in terms\
- of the TFDistortion and other tensors of covd.";
+ of the TFDistortion of covd.";
 Disformation::usage =
 	"Disformation is a reserved word in xMAG. It is used to generated the name \
 of the Disformation tensor.";
+TFDisformation::usage ="TFDisformation[covd] returns the traceless Disformation tensor associated to a connection covd acting on a tangent bundle.";
+TFDisformationToDisformation::usage="TFDisformationToDisformation[expr,covd] expands expr expressing all TFDisformation tensors of covd in terms\
+ of the Disformation of covd.";
+DisformationToTFDisformation::usage="DisformationToTFDisformation[expr, covd] expands expr expressing all Disformation tensors of covd in terms\
+ of the TFDisformation and other tensors of covd.";
+DisformationTrace::usage =
+	"DisformationTrace[covd][n] returns the n trace vector of the disformation tensor associated to the covariant \
+derivative covd.";
 Contorsion::usage =
 	"Contorsion is a reserved word in xMAG. It is used to generated the name \
 of the Contorsion tensor.";
+TFContorsion::usage ="TFContorsion[covd] returns the traceless Contorsion tensor associated to a connection covd acting on a tangent bundle.";
+TFContorsionToContorsion::usage="TFContorsionToContorsion[expr, covd] expands expr expressing all TFContorsion tensors of covd in terms\
+ of the Contorsion and other tensors of covd.";
+ContorsionToTFContorsion::usage="ContorsionToTFContorsion[expr, covd] expands expr expressing all Contorsion tensors of covd in terms\
+ of the TFContorsion and other tensors of covd.";
 NonMetricity::usage =
 	"NonMetricity is a reserved word in xMAG. It is used to generated the name \
 of the nonmetricity tensor.";
@@ -218,21 +231,13 @@ MAGChristoffelTensorStop::usage="ChristoffelToDistortionStop[CD,g] stop the auto
 BreakDistortion::usage="BreakDistortion[exp,cd,metric] transforms all occurences of Distortioncd in exp into NonMetricitycd and Torsioncd terms";
 BreakDisformation::usage="BreakDisformation[exp,cd,metric] transforms all occurences of Disformation in exp into the sum of nonmetricity tensors";
 BreakContorsion::usage="BreakBreakContorsion[exp,cd,metric] transforms all occurences of Disformation in exp into the sum of torsion tensors";
-(*NonMetricityToDisformation::usage="NonMetricityToDistortion[exp,cd,metric] transforms all occurences of NonMetricitycd in exp into Disformationcd tensors";
-TorsionToContorsion::usage="TorsionToContorsion[exp,cd,metric] transforms all occurences of Torsioncd in exp into Contorsioncd tensors";*)
-ToDistortion::usage="ToDistortion[exp,CD,g] decomposes the curvature tensors and covariant derivative associated to CD appearing in exp into curvature tensors and
-covariant derivative associated with metric g plus terms with the distortion tensors. It's also transforms non metricity, torsion, disformation and contorsion tensors into the distortion tensor.";
+ToDistortion::usage="ToDistortion[exp,CD,g] decomposes the curvature tensors and covariant derivative associated to CD in exp into curvature tensors and
+covariant derivative associated with metric g plus terms proportional to the distortion tensors.\
+It's also transforms non metricity, torsion, disformation and contorsion tensors into the distortion tensor.";
 (**************************************************************************************************************)
 (******************** Function related to the trace decomposition of a tensor *********************************)
 (**************************************************************************************************************)
 TraceFreeQ::usage="TraceFreeQ[tensor[inds],met] returns True if the contraction with the metric met of any pair of the indices of tensor is zero.";
-DefTraceProjector::usage="DefTraceProjector[order,metric] defines the projector needed for the decomposition of a tensor into trace-less and trace part. 
-The parameter order can take values 2,3 and 4.";
-ProjectorTL::usage="ProjectorTL[order,tracelevel] is a reserved word in xMAG. It is used to generated the name for the trace-less projector.";
-ProjectorT::usage="ProjectorT[order,tracelevel] is a reserved word in xMAG. It is used to generated the name for the trace projector.";
-ExplodeProjectorTL::usage="ExplodeProjectorTL[order,tracelevel] expresses the trace-less projector in the metric";
-ExplodeProjectorT::usage="ExplodeProjector[order,tracelevel] expresses the trace projector in the metric";
-
 TracesToRiemann::usage="TracesToRiemann[exp,cd,metric] transforms the CoRicci and Homothetic tensors into the metric trace and contractions of the Riemann tensor";
 RiemannToWeyl::usage="RiemannToWeyl[expr, covd] expands expr expressing all Riemann tensors of covd in terms of the Weyl and other tensors of covd.\
  If the second argument is a list of covariant derivatives the command is applied sequentially on expr. RiemannToWeyl[expr] expands all Riemann tensors.";
@@ -375,7 +380,7 @@ Protect[xAct`xTensor`DefCovD];
 Unprotect[xAct`xTensor`DefCovD];
 
 If[FreeQ[Options[xAct`xTensor`DefCovD],ConnectionRelations], 
-	Options[xAct`xTensor`DefCovD] ^= Append[Options[xAct`xTensor`DefCovD], ConnectionRelations -> True];
+	Options[xAct`xTensor`DefCovD] ^= Append[Options[xAct`xTensor`DefCovD], ConnectionRelations -> False];
 , 
 	Null;
 ];
@@ -391,7 +396,7 @@ Protect[xAct`xTensor`DefCovD];
 
 
 (* ::Input::Initialization:: *)
-Set[CovDTensorQ[#],True]&/@{Distortion,DistortionTrace,TFDistortion,Disformation,Contorsion,NonMetricity,TFNonMetricity,WeylVector,WeylCoVector,TFTorsion,TorsionVector,CoRicci,TFCoRicci,Homothetic,Weyl,NRiemann,NWeyl,LinearVector};
+Set[CovDTensorQ[#],True]&/@{Distortion,DistortionTrace,TFDistortion,Disformation,DisformationTrace,TFDisformation,Contorsion,TFContorsion,NonMetricity,TFNonMetricity,WeylVector,WeylCoVector,TFTorsion,TorsionVector,CoRicci,TFCoRicci,Homothetic,Weyl,NRiemann,NWeyl,LinearVector};
 CovDTensorQ[_]=False;
 
 
@@ -405,13 +410,11 @@ WeylCoVector[covd_]:=ToExpression[StringJoin[ToString[WeylCoVector],ToString[cov
 TorsionVector[covd_]:=ToExpression[StringJoin[ToString[TorsionVector],ToString[covd]]];
 CoRicci[covd_]:=ToExpression[StringJoin[ToString[CoRicci],ToString[covd]]];
 Homothetic[covd_]:=ToExpression[StringJoin[ToString[Homothetic],ToString[covd]]];
-WeylMAG[covd_]:=ToExpression[StringJoin[ToString[WeylMAG],ToString[covd]]];
 TFCoRicci[covd_]:=ToExpression[StringJoin[ToString[TFCoRicci],ToString[covd]]];
 
 
 (* ::Input::Initialization:: *)
 (** Extended parts curvature tensors **)
-PrintAsCharacter[WeylMAG]="W";
 PrintAsCharacter[Ricci]="\!\(\*OverscriptBox[\(R\), \((1)\)]\)";
 PrintAsCharacter[CoRicci]="\!\(\*OverscriptBox[\(R\), \((2)\)]\)";
 PrintAsCharacter[Homothetic]="\!\(\*OverscriptBox[\(R\), \((3)\)]\)";
@@ -425,7 +428,10 @@ PrintAsCharacter[Distortion]="C";
 PrintAsCharacter[DistortionTrace]="C";
 PrintAsCharacter[TFDistortion]="\!\(\*OverscriptBox[\(C\), \((tf)\)]\)";
 PrintAsCharacter[Disformation]="D";
+PrintAsCharacter[DisformationTrace]="D";
+PrintAsCharacter[TFDisformation]="\!\(\*OverscriptBox[\(D\), \((tf)\)]\)";
 PrintAsCharacter[Contorsion]="K";
+PrintAsCharacter[TFContorsion]="\!\(\*OverscriptBox[\(K\), \((tf)\)]\)";
 PrintAsCharacter[NonMetricity]="Q";
 PrintAsCharacter[TFNonMetricity]="\!\(\*OverscriptBox[\(Q\), \((tf)\)]\)";
 PrintAsCharacter[WeylVector]="Q";
@@ -445,6 +451,7 @@ xMAGxTensorTFRicci[covd_Symbol?CovDQ]:=GiveSymbol[TFRicci,covd];
 
 (* ::Input::Initialization:: *)
 DistortionTrace[covd_][comp_]:=ToExpression[StringJoin[ToString[DistortionTrace],ToString[covd],ToString[comp]]];
+DisformationTrace[covd_][comp_]:=ToExpression[StringJoin[ToString[DisformationTrace],ToString[covd],ToString[comp]]];
 
 
 (* ::Input::Initialization:: *)
@@ -466,17 +473,37 @@ ConnectionRelations[___]:={};
 
 
 (* ::Input::Initialization:: *)
-ClearConnectionRelations[cd_?CovDQ,options___?OptionQ]:=(ClearAutomaticRules[Evaluate[GiveSymbol[Distortion,cd]],ConnectionRelations[cd,Distortion],options];
+ClearConnectionRelations[cd_?(TorsionQ[#]&&NonMetricityQ[#]&),options___?OptionQ]:=(ClearAutomaticRules[Evaluate[GiveSymbol[Distortion,cd]],ConnectionRelations[cd,Distortion],options];
 ClearAutomaticRules[Evaluate[GiveSymbol[Torsion,cd]],ConnectionRelations[cd,Torsion],options];
 ClearAutomaticRules[Evaluate[GiveSymbol[NonMetricity,cd]],ConnectionRelations[cd,NonMetricity],options];
 cd/: ConnectionRelationsQ[cd]:=False;
 );
 
+ClearConnectionRelations[cd_?(!TorsionQ[#]&&NonMetricityQ[#]&),options___?OptionQ]:=(ClearAutomaticRules[Evaluate[GiveSymbol[Disformation,cd]],ConnectionRelations[cd,Distortion],options];
+ClearAutomaticRules[Evaluate[GiveSymbol[NonMetricity,cd]],ConnectionRelations[cd,NonMetricity],options];
+cd/: ConnectionRelationsQ[cd]:=False;
+);
+
+ClearConnectionRelations[cd_?(TorsionQ[#]&&!NonMetricityQ[#]&),options___?OptionQ]:=(ClearAutomaticRules[Evaluate[GiveSymbol[Contorsion,cd]],ConnectionRelations[cd,Distortion],options];
+ClearAutomaticRules[Evaluate[GiveSymbol[Torsion,cd]],ConnectionRelations[cd,Torsion],options];
+cd/: ConnectionRelationsQ[cd]:=False;
+);
+
 
 (* ::Input::Initialization:: *)
-SetConnectionRelations[cd_?CovDQ,options___?OptionQ]:=(AutomaticRules[Evaluate[GiveSymbol[Distortion,cd]],ConnectionRelations[cd,Distortion],options];
+SetConnectionRelations[cd_?(TorsionQ[#]&&NonMetricityQ[#]&),options___?OptionQ]:=(AutomaticRules[Evaluate[GiveSymbol[Distortion,cd]],ConnectionRelations[cd,Distortion],options];
 AutomaticRules[Evaluate[GiveSymbol[Torsion,cd]],ConnectionRelations[cd,Torsion],options];
 AutomaticRules[Evaluate[GiveSymbol[NonMetricity,cd]],ConnectionRelations[cd,NonMetricity],options];
+cd/: ConnectionRelationsQ[cd]:=True;
+);
+
+SetConnectionRelations[cd_?(!TorsionQ[#]&&NonMetricityQ[#]&),options___?OptionQ]:=(AutomaticRules[Evaluate[GiveSymbol[Disformation,cd]],ConnectionRelations[cd,Distortion],options];
+AutomaticRules[Evaluate[GiveSymbol[NonMetricity,cd]],ConnectionRelations[cd,NonMetricity],options];
+cd/: ConnectionRelationsQ[cd]:=True;
+);
+
+SetConnectionRelations[cd_?(TorsionQ[#]&&!NonMetricityQ[#]&),options___?OptionQ]:=(AutomaticRules[Evaluate[GiveSymbol[Contorsion,cd]],ConnectionRelations[cd,Distortion],options];
+AutomaticRules[Evaluate[GiveSymbol[Torsion,cd]],ConnectionRelations[cd,Torsion],options];
 cd/: ConnectionRelationsQ[cd]:=True;
 );
 
@@ -510,11 +537,14 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 			tfricci=GiveSymbol[TFRicci,covd],ricci=GiveSymbol[Ricci,covd],ricciscalar=GiveSymbol[RicciScalar,covd],distortion= GiveSymbol[Distortion,covd],
 			tfdistortion=GiveSymbol[TFDistortion,covd],distortiont1=GiveSymbol[DistortionTrace,covd,1],distortiont2=GiveSymbol[DistortionTrace,covd,2],
 			distortiont3=GiveSymbol[DistortionTrace,covd,3],tfnonmetricity=GiveSymbol[TFNonMetricity,covd],tftorsion=GiveSymbol[TFTorsion,covd],
-			disformation= GiveSymbol[Disformation,covd],contorsion=GiveSymbol[Contorsion,covd],nonmetricity=GiveSymbol[NonMetricity,covd],
+			disformation= GiveSymbol[Disformation,covd],tfdisformation= GiveSymbol[TFDisformation,covd],
+			disformation1=GiveSymbol[DisformationTrace,covd,1],disformation2=GiveSymbol[DisformationTrace,covd,2],contorsion=GiveSymbol[Contorsion,covd],
+			tfcontorsion= GiveSymbol[TFContorsion,covd],nonmetricity=GiveSymbol[NonMetricity,covd],
 			torsion=GiveSymbol[Torsion,covd],torsionvec=GiveSymbol[TorsionVector,covd],weylvec=GiveSymbol[WeylVector,covd],coweylvec= GiveSymbol[WeylCoVector,covd],
 			a= indices[[1]],b= indices[[2]],c= indices[[3]],d= indices[[4]]
 		},
 		If[magtdQ,
+		If[!metricQ,
 		(*** MAG Weyl tensor ***)
 		DefTensor[weylmag[-a,-b,-c,d],M,Antisymmetric[{-a,-b}],TraceFree->{-a,-b,-c,d},PrintAs -> GiveOutputString[Weyl,covd],
 						Master-> covd, DefInfo -> If[info, {"Totally traceless generalized Weyl tensor",""}, False],TensorID->{Weyl,covd}];
@@ -524,10 +554,14 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 		(**** RicciScalar *****)
 		DefTensor[ricciscalar[],M, PrintAs -> GiveOutputString[RicciScalar,covd],
 						Master-> covd, DefInfo -> If[info, {"Ricci scalar",""}, False],TensorID->{RicciScalar,covd}];
+		];
 		(****** Definition of the non Riemannian parts of curvature tensors ********)				
 		DefTensor[Nriemann[-a,-b,-c,d],M,Antisymmetric[{-a,-b}],PrintAs -> GiveOutputString[NRiemann,covd],
 						Master-> covd, DefInfo -> If[info, {"non-Riemannian part of the Riemann tensor",""}, False]];
 						
+(***************************************************************************************************************)	
+(************************* When the connection has torsion and nonmetricity ************************************)
+(***************************************************************************************************************)	
 		If[!metricQ && torsionQ,
 		NonMetricityQ[covd,metric]=True;
 		(***********************************************)	
@@ -565,9 +599,7 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 		DefTensor[weylvec[a],M,PrintAs -> GiveOutputString[WeylVector,covd],
 						Master-> covd, DefInfo -> If[info, {"Weyl vector",""}, False],TensorID->{WeylVector,covd}];	
 		DefTensor[coweylvec[-a],M,PrintAs -> GiveOutputString[WeylCoVector,covd],
-						Master-> covd, DefInfo -> If[info, {"Weyl co-vector",""}, False],TensorID->{WeylCoVector,covd}];	
-						
-		(** Tensors related to the torsion **)									
+						Master-> covd, DefInfo -> If[info, {"Weyl co-vector",""}, False],TensorID->{WeylCoVector,covd}];									
 		DefTensor[contorsion[a,-b,-c],M,Antisymmetric[{1,3}],ForceSymmetries->True,PrintAs -> GiveOutputString[Contorsion,covd],
 						Master-> covd, DefInfo -> If[info, {"antisymmetric contorsion tensor",""}, False],TensorID->{Contorsion,covd}];	
 		DefTensor[torsionvec[-a],M,PrintAs -> GiveOutputString[TorsionVector,covd],
@@ -602,7 +634,28 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 			If[autoNMQ,
 			covd/: AutoNonMetricityQ[covd] =True;
 			If[!metricQ,SetGradMetricToNonMetricityRule[covd,metric]]];
+		(***********************************************)	
+		(*********** Curvature relations ***************)
+		(***********************************************)
+		If[SameQ[metric,$Metrics[[1]]],
+			Unprotect[CurvatureRelations];	
+			covd/:CurvatureRelations[covd,Riemann]=Join[CurvatureRelations[covd,Riemann],MakeRule[{riemann[-c, -b, -a, a],homothetic[-b, -c]}]];
+			covd/:CurvatureRelations[covd,Ricci]=Join[CurvatureRelations[covd,Ricci],MakeRule[{ricci[-a,a],ricciscalar[]}]];
+			covd/:CurvatureRelations[covd,Riemann]=DeleteDuplicates@Join[CurvatureRelations[covd,Riemann],MakeRule[{riemann[-c, -b, c, a],coricci[a, -b]}]];
+			covd/:CurvatureRelations[covd,CoRicci]=MakeRule[{coricci[d,-d],ricciscalar[]}];
+			CurvatureRelations[covd]:=Join[CurvatureRelations[covd,Riemann],CurvatureRelations[covd,Ricci],CurvatureRelations[covd,CoRicci]];
+			Protect[CurvatureRelations];
+			If[curvrels,CurvatureRelationsQ[covd]:=True;
+			AutomaticRules[riemann,CurvatureRelations[covd,Riemann],Verbose->False];
+			AutomaticRules[ricci,CurvatureRelations[covd,Ricci],Verbose->False];
+			AutomaticRules[coricci,CurvatureRelations[covd,CoRicci],Verbose->False];
+			]]		
 		];
+		
+(***************************************************************************************************************)	
+(************************* When the connection has nonmetricity but no torsion *********************************)
+(***************************************************************************************************************)	
+		
 		If[!metricQ && !torsionQ,
 		NonMetricityQ[covd,metric]=True;
 		(***********************************************)	
@@ -615,15 +668,53 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 		(***********************************************)	
 		(************** Connection tensors *************)
 		(***********************************************)
-			DefTensor[disformation[a,-b,-c],M,Symmetric[{2,3}],PrintAs -> GiveOutputString[Disformation,covd],
+		DefTensor[disformation[a,-b,-c],M,Symmetric[{2,3}],PrintAs -> GiveOutputString[Disformation,covd],
 						Master-> covd, DefInfo -> If[info, {"symmetric disformation tensor",""}, False],TensorID->{Disformation,covd}];
-			DefTensor[nonmetricity[-a,-b,-c],M,Symmetric[{2,3}],PrintAs -> GiveOutputString[NonMetricity,covd],
+		DefTensor[tfdisformation[a,-b,-c],M,Symmetric[{2,3}],DependenciesOfCovD[covd],TraceFree->{a,-b,-c},
+							PrintAs:>GiveOutputString[TFDisformation,covd],Master->covd, DefInfo -> If[info, {"trace free part of the Disformation tensor",""}, False]
+							,TensorID->{TFDisformation,covd}];
+		DefTensor[disformation1[a],M,PrintAs-> xMAGPrint[DisformationTrace,1]];
+		DefTensor[disformation2[-a],M,PrintAs-> xMAGPrint[DisformationTrace,2]];		
+			
+		DefTensor[nonmetricity[-a,-b,-c],M,Symmetric[{2,3}],PrintAs -> GiveOutputString[NonMetricity,covd],
 						Master-> covd, DefInfo -> If[info, {"symmetric nonmetricity tensor",""}, False],TensorID->{NonMetricity,covd}];
-			DefTensor[weylvec[-a],M,PrintAs -> GiveOutputString[WeylVector,covd],
+		DefTensor[weylvec[-a],M,PrintAs -> GiveOutputString[WeylVector,covd],
 						Master-> covd, DefInfo -> If[info, {"Weyl vector",""}, False],TensorID->{WeylVector,covd}];			
-			DefTensor[coweylvec[-a],M,PrintAs -> GiveOutputString[WeylCoVector,covd],
+		DefTensor[coweylvec[-a],M,PrintAs -> GiveOutputString[WeylCoVector,covd],
 						Master-> covd, DefInfo -> If[info, {"Weyl co-vector",""}, False],TensorID->{WeylCoVector,covd}];
-			];
+						
+		(***********************************************)	
+		(*********** Connection relations **************)
+		(***********************************************)
+		ConnectionRelations[covd,Distortion]=Join[MakeRule[{disformation[b,-a,a],disformation1[b]}],MakeRule[{disformation[a,-b,-a],disformation2[-b]}]];
+		ConnectionRelations[covd,NonMetricity]=Join[MakeRule[{nonmetricity[a, -b ,-a ],coweylvec[-b]}],MakeRule[{nonmetricity[b,a,-a],weylvec[b]}]];
+		If[connectionrels,
+		If[info,Print["** DefCovD:  Contractions of Distortion, Torsion, and Nonmetritcity automatically replaced by correcponding vectors."]];
+			covd/: ConnectionRelationsQ[covd]:=True;
+			AutomaticRules[disformation,ConnectionRelations[covd,Distortion],Verbose->False];
+			AutomaticRules[nonmetricity,ConnectionRelations[covd,NonMetricity],Verbose->False]
+			,covd/:ConnectionRelationsQ[covd]:=False];
+		(************************************************************************************)	
+		(****************************** Curvature relations *********************************)
+		(************************************************************************************)
+		If[SameQ[metric,$Metrics[[1]]],
+			Unprotect[CurvatureRelations];	
+			covd/:CurvatureRelations[covd,Riemann]=Join[CurvatureRelations[covd,Riemann],MakeRule[{riemann[-c, -b, -a, a],homothetic[-b, -c]}]];
+			covd/:CurvatureRelations[covd,Ricci]=Join[CurvatureRelations[covd,Ricci],MakeRule[{ricci[-a,a],ricciscalar[]}]];
+			covd/:CurvatureRelations[covd,Riemann]=DeleteDuplicates@Join[CurvatureRelations[covd,Riemann],MakeRule[{riemann[-c, -b, c, a],coricci[a, -b]}]];
+			covd/:CurvatureRelations[covd,CoRicci]=MakeRule[{coricci[d,-d],ricciscalar[]}];
+			CurvatureRelations[covd]:=Join[CurvatureRelations[covd,Riemann],CurvatureRelations[covd,Ricci],CurvatureRelations[covd,CoRicci]];
+			Protect[CurvatureRelations];
+			If[curvrels,CurvatureRelationsQ[covd]:=True;
+			AutomaticRules[riemann,CurvatureRelations[covd,Riemann],Verbose->False];
+			AutomaticRules[ricci,CurvatureRelations[covd,Ricci],Verbose->False];
+			AutomaticRules[coricci,CurvatureRelations[covd,CoRicci],Verbose->False];
+			]]		
+		];
+			
+(***************************************************************************************************************)	
+(*********************** When the connection has torsion but is metric compatible ******************************)
+(***************************************************************************************************************)	
 					
 			If[metricQ && torsionQ,
 			NonMetricityQ[covd,metric]=False;
@@ -635,25 +726,8 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 			DefTensor[contorsion[a,-b,-c],M,Antisymmetric[{1,3}],ForceSymmetries->True,PrintAs -> GiveOutputString[Contorsion,covd],
 						Master-> covd, DefInfo -> If[info, {"antisymmetric contorsion tensor",""}, False],TensorID->{Contorsion,covd}];	
 			DefTensor[torsionvec[-a],M,PrintAs -> GiveOutputString[TorsionVector,covd],
-						Master-> covd, DefInfo -> If[info, {"torsion vector",""}, False],TensorID->{TorsionVector,covd}];					
-			];
-			
-			(**** Add CurvatureRelations ***)
-			If[SameQ[metric,$Metrics[[1]]],
-			Unprotect[CurvatureRelations];	
-			covd/:CurvatureRelations[covd,Riemann]=Join[CurvatureRelations[covd,Riemann],MakeRule[{riemann[-c, -b, -a, a],homothetic[-b, -c]}]];
-			covd/:CurvatureRelations[covd,Ricci]=Join[CurvatureRelations[covd,Ricci],MakeRule[{ricci[-a,a],ricciscalar[]}]];
-			If[!metricQ,
-				covd/:CurvatureRelations[covd,Riemann]=DeleteDuplicates@Join[CurvatureRelations[covd,Riemann],MakeRule[{riemann[d, -b, -d, a],coricci[a, -b]}]];
-				covd/:CurvatureRelations[covd,CoRicci]=MakeRule[{coricci[-a,a],ricciscalar[]}]
-			];
-			CurvatureRelations[covd]:=Join[CurvatureRelations[covd,Riemann],CurvatureRelations[covd,Ricci],CurvatureRelations[covd,CoRicci]];
-			Protect[CurvatureRelations];
-			If[curvrels,CurvatureRelationsQ[covd]:=True;
-			AutomaticRules[riemann,CurvatureRelations[covd,Riemann],Verbose->False];
-			AutomaticRules[ricci,CurvatureRelations[covd,Ricci],Verbose->False];
-			AutomaticRules[coricci,CurvatureRelations[covd,CoRicci],Verbose->False];
-			]
+						Master-> covd, DefInfo -> If[info, {"torsion vector",""}, False],TensorID->{TorsionVector,covd}];							
+																		
 			];
 			(**** Weyl To Riemann and Riemann To Weyl rules ***)
 			WeylToRiemannRules[covd]=ToRule[weylmag[-a,-b,-c,d]==CollectTensors[ToTracelessTensor[riemann[-a,-b,-c,d],1]]];
@@ -702,13 +776,13 @@ deflistablexTensorxMAGCovDs[function_]:=With[{rules=SymbolJoin[function,"Rules"]
 Unprotect[function];
 function[xAct`xTensor`Private`expr$_,xAct`xTensor`Private`covd$_Symbol?CovDQ]=.;
 If[function===WeylToRiemann,
-function[xAct`xTensor`Private`expr$_,xAct`xTensor`Private`covd$_Symbol?LeviCivitaQ]:=xAct`xTensor`Private`expr$/. xAct`xTensor`Private`WeylToRiemannRules[xAct`xTensor`Private`covd$],
+function[xAct`xTensor`Private`expr$_,xAct`xTensor`Private`covd$_Symbol?(LeviCivitaQ[#]||(TorsionQ[#]&&!NonMetricityQ[#])&)]:=xAct`xTensor`Private`expr$/. xAct`xTensor`Private`WeylToRiemannRules[xAct`xTensor`Private`covd$],
 If[function===RiemannToWeyl,
-function[xAct`xTensor`Private`expr$_,xAct`xTensor`Private`covd$_Symbol?LeviCivitaQ]:=xAct`xTensor`Private`expr$/. xAct`xTensor`Private`RiemannToWeylRules[xAct`xTensor`Private`covd$],
+function[xAct`xTensor`Private`expr$_,xAct`xTensor`Private`covd$_Symbol?(LeviCivitaQ[#]||(TorsionQ[#]&&!NonMetricityQ[#])&)]:=xAct`xTensor`Private`expr$/. xAct`xTensor`Private`RiemannToWeylRules[xAct`xTensor`Private`covd$],
 If[function===TFRicciToRicci,
-function[xAct`xTensor`Private`expr$_,xAct`xTensor`Private`covd$_Symbol?LeviCivitaQ]:=xAct`xTensor`Private`expr$/. xAct`xTensor`Private`TFRicciToRicciRules[xAct`xTensor`Private`covd$],
+function[xAct`xTensor`Private`expr$_,xAct`xTensor`Private`covd$_Symbol?(LeviCivitaQ[#]||(TorsionQ[#]&&!NonMetricityQ[#])&)]:=xAct`xTensor`Private`expr$/. xAct`xTensor`Private`TFRicciToRicciRules[xAct`xTensor`Private`covd$],
 If[function===RicciToTFRicci,
-function[xAct`xTensor`Private`expr$_,xAct`xTensor`Private`covd$_Symbol?LeviCivitaQ]:=xAct`xTensor`Private`expr$/. xAct`xTensor`Private`RicciToTFRicciRules[xAct`xTensor`Private`covd$]
+function[xAct`xTensor`Private`expr$_,xAct`xTensor`Private`covd$_Symbol?(LeviCivitaQ[#]||(TorsionQ[#]&&!NonMetricityQ[#])&)]:=xAct`xTensor`Private`expr$/. xAct`xTensor`Private`RicciToTFRicciRules[xAct`xTensor`Private`covd$]
 ]]]];
 function[expr_,PD]:=expr/.rules[PD];
 function[expr_,covd_?NonMetricityQ]:=expr/.rules[covd];
@@ -982,7 +1056,7 @@ With[{a= indices[[1]],
 	contorsion= GiveSymbol[Contorsion,covd]
 	},
 	rule=MakeRule[{contorsion[a,-b,-c],1/2*torsion[a,-b,-c]+1/2torsion[-b,a,-c]+1/2*torsion[-c,a,-b]}];
-	exp/.rule
+	exp/.(Flatten@(InverseMakeRule/@ConnectionRelations[covd]))/.rule
 	]
 ]
 
@@ -999,7 +1073,7 @@ With[{a= indices[[1]],
 	disformation= GiveSymbol[Disformation,covd]
 	},
 	rule=MakeRule[{disformation[a,-b,-c],1/2*nonmetricity[a,-b,-c]-1/2*nonmetricity[-b,a,-c]-1/2*nonmetricity[-c,a,-b]}];
-	exp/.rule
+	exp/.(Flatten@(InverseMakeRule/@ConnectionRelations[covd]))/.rule
 	]
 ]
 
@@ -1181,9 +1255,11 @@ If[!MAGChristoffelQ[covd,metric],MAGChristoffelTensorStart[covd,metric]];
 If[nmQ&&torsionQ,
 If[ConnectionRelationsQ[covd]===True,ClearConnectionRelations[covd]];res1=DisformationToDistortion[ContorsionToDistortion[TorsionToDistortion[NonMetricityToDistortion[ChangeCovD[ChangeCurvature[TracesToRiemann[WeylToRiemann[exp],covd,metric],covd,covdmetric],covd,covdmetric],covd,metric],covd,metric],covd,metric],covd,metric]];
 	If[!nmQ&&torsionQ,
-	res2=NoScalar[TorsionToDistortion[ChangeCovD[ChangeCurvature[exp,covd,covdmetric],covd,covdmetric],covd,metric]]];
+	If[ConnectionRelationsQ[covd]===True,ClearConnectionRelations[covd]];
+	res2=NoScalar[TorsionToDistortion[ChangeCovD[ChangeCurvature[TracesToRiemann[exp,covd,metric],covd,covdmetric],covd,covdmetric],covd,metric]]];
 	If[nmQ&&!torsionQ,
-	res3=NonMetricityToDistortion[ChangeCovD[ChangeCurvature[exp,covd,covdmetric],covd,covdmetric],covd,metric]];
+	If[ConnectionRelationsQ[covd]===True,ClearConnectionRelations[covd]];
+	res3=NonMetricityToDistortion[ChangeCovD[ChangeCurvature[TracesToRiemann[exp,covd,metric],covd,covdmetric],covd,covdmetric],covd,metric]];
 	Piecewise[{{res1,nmQ&&torsionQ},{res2,!nmQ&&torsionQ},{res3,nmQ&&!torsionQ}}]
 	]
 ]
@@ -1195,20 +1271,6 @@ ToDistortion[exp_]:=ToDistortion[exp,Part[$CovDs,3]]
 
 
 (* ::Input::Initialization:: *)
-ProjectorTL[order_,tracelevel_]:=ToExpression[StringJoin[ToString[ProjectorTL],ToString[order],ToString[tracelevel]]];
-ProjectorT[order_,tracelevel_]:=ToExpression[StringJoin[ToString[ProjectorT],ToString[order],ToString[tracelevel]]];
-ExplodeProjectorTL[order_,tracelevel_]:=ToExpression[StringJoin[ToString[ExplodeProjectorTL],ToString[tracelevel]]];
-ExplodeProjectorT[order_,tracelevel_]:=ToExpression[StringJoin[ToString[ExplodeProjectorT],ToString[tracelevel]]];
-
-
-(* ::Input::Initialization:: *)
-ProjectorTL[order_]:=ToExpression[StringJoin[ToString[ProjectorTL],ToString[order]]];
-ProjectorT[order_]:=ToExpression[StringJoin[ToString[ProjectorT],ToString[order]]];
-ExplodeProjectorTL[order_]:=ToExpression[StringJoin[ToString[ExplodeProjectorTL],ToString[order]]];
-ExplodeProjectorT[order_]:=ToExpression[StringJoin[ToString[ExplodeProjectorT],ToString[order]]];
-
-
-(* ::Input::Initialization:: *)
 TraceFreeQ[tensor_?xTensorQ,inds___List,metric_?MetricQ]:=Module[{mettraces,traces,tfQ},
 mettraces=Map[metric@@#&,ChangeIndex/@Subsets[inds,{2}]];
 traces=Map[ContractMetric[ToCanonical[tensor@@inds*#],metric]&,mettraces];
@@ -1217,153 +1279,6 @@ tfQ
 ];
 TraceFreeQ[tensor_,metric_?MetricQ]:=TraceFreeQ[Head@tensor,List@@tensor,metric];
 TraceFreeQ[tensor_]:=TraceFreeQ[Head@tensor,List@@tensor,$Metrics[[1]]];
-
-
-(* ::Input::Initialization:: *)
-Options[DefTraceProjector]:={DefInfo->{"tensor",""}}
-DefTraceProjector[order_,metric_,options:OptionsPattern[]]:=Module[{M=BaseOfVBundle@VBundleOfMetric[metric],indices = GetIndicesOfVBundle[VBundleOfMetric[metric], 8],definfo},
-{definfo}=OptionValue[{DefTraceProjector},{options},{DefInfo}];
-With[{info= If[definfo =!= False, $DefInfoQ, False],
-	dimM=DimOfManifold[M],
-	i1= indices[[1]],
-		i2= indices[[2]],
-		i3= indices[[3]],
-		i4= indices[[4]],
-	j1= indices[[5]],
-		j2= indices[[6]],
-		j3= indices[[7]],
-		j4= indices[[8]]
-},
-SetOptions[ToRule,MetricOn->All];
-If[order==2,
-DefTensor[ProjectorTL[order][i1,i2,-j1,-j2],M,PrintAs->"\!\(\*OverscriptBox[\(\[CapitalPi]\), \((tl)\)]\)", DefInfo -> If[info, {"trace-less projector of order 2",""}, False]];
-DefTensor[ProjectorT[order][i1,i2,-j1,-j2],M,PrintAs->"\!\(\*OverscriptBox[\(\[CapitalPi]\), \((t)\)]\)", DefInfo -> If[info, {"trace projector of order 2",""}, False]];
-ToFunction[ProjectorTL[order][i1, i2, -j1, -j2]==delta[i1, -j1]*delta[i2, -j2] - (metric[i1, i2]*metric[-j1, -j2])/dimM,ExplodeProjectorTL[order]];
-ToFunction[ProjectorT[order][i1, i2, -j1, -j2]==(metric[i1, i2]*metric[-j1, -j2])/dimM,ExplodeProjectorT[order]];
-,
-If[order==3,
-DefTensor[ProjectorTL[order][i1,i2,i3,-j1,-j2,-j3],M,PrintAs->"\!\(\*OverscriptBox[\(\[CapitalPi]\), \((tl)\)]\)", DefInfo -> If[info, {"trace-less projector of order 3",""}, False]];
-DefTensor[ProjectorT[order][i1,i2,i3,-j1,-j2,-j3],M,PrintAs->"\!\(\*OverscriptBox[\(\[CapitalPi]\), \((t)\)]\)", DefInfo -> If[info, {"trace projector of order 3",""}, False]];
-ToFunction[ProjectorTL[order][i1, i2, i3, -j1, -j2, -j3] == delta[i1, -j1]*delta[i2, -j2]*delta[i3, -j3] + 
-   (delta[i2, -j3]*metric[i1, i3]*metric[-j1, -j2] + delta[i1, -j3]*metric[i2, i3]*metric[-j1, -j2] + delta[i3, -j2]*metric[i1, i2]*metric[-j1, -j3] + delta[i1, -j2]*metric[i2, i3]*metric[-j1, -j3] + 
-     delta[i3, -j1]*metric[i1, i2]*metric[-j2, -j3] + delta[i2, -j1]*metric[i1, i3]*metric[-j2, -j3])/((-1 + dimM)*(2 + dimM)) - 
-   ((1 + dimM)*(delta[i3, -j3]*metric[i1, i2]*metric[-j1, -j2] + delta[i2, -j2]*metric[i1, i3]*metric[-j1, -j3] + delta[i1, -j1]*metric[i2, i3]*metric[-j2, -j3]))/((-1 + dimM)*(2 + dimM)),ExplodeProjectorTL[order]];
-ToFunction[ProjectorT[order][i1, i2, i3, -j1, -j2, -j3]==-((delta[i2, -j3]*metric[i1, i3]*metric[-j1, -j2] + delta[i1, -j3]*metric[i2, i3]*metric[-j1, -j2] + delta[i3, -j2]*metric[i1, i2]*metric[-j1, -j3] + delta[i1, -j2]*metric[i2, i3]*metric[-j1, -j3] + 
-     delta[i3, -j1]*metric[i1, i2]*metric[-j2, -j3] + delta[i2, -j1]*metric[i1, i3]*metric[-j2, -j3])/((-1 + dimM)*(2 + dimM))) + 
-  ((1 + dimM)*(delta[i3, -j3]*metric[i1, i2]*metric[-j1, -j2] + delta[i2, -j2]*metric[i1, i3]*metric[-j1, -j3] + delta[i1, -j1]*metric[i2, i3]*metric[-j2, -j3]))/((-1 + dimM)*(2 + dimM)),ExplodeProjectorT[order]]
-,
-If[order==4,
-DefTensor[ProjectorTL[order,1][i1,i2,i3,i4,-j1,-j2,-j3,-j4],M,PrintAs->"\!\(\*OverscriptBox[\(\[CapitalPi]\), \((\*SubscriptBox[\(tl\), \(1\)])\)]\)", DefInfo -> If[info, {"simple trace-less projector of order 4",""}, False]];
-DefTensor[ProjectorT[order,1][i1,i2,i3,i4,-j1,-j2,-j3,-j4],M,PrintAs->"\!\(\*OverscriptBox[\(\[CapitalPi]\), \((\*SubscriptBox[\(t\), \(1\)])\)]\)", DefInfo -> If[info, {"simple trace projector of order 4",""}, False]];
-DefTensor[ProjectorTL[order,2][i1,i2,i3,i4,-j1,-j2,-j3,-j4],M,PrintAs->"\!\(\*OverscriptBox[\(\[CapitalPi]\), \((\*SubscriptBox[\(tl\), \(2\)])\)]\)", DefInfo -> If[info, {"double trace-less projector of order 4",""}, False]];
-DefTensor[ProjectorT[order,2][i1,i2,i3,i4,-j1,-j2,-j3,-j4],M,PrintAs->"\!\(\*OverscriptBox[\(\[CapitalPi]\), \((\*SubscriptBox[\(t\), \(2\)])\)]\)", DefInfo -> If[info, {"double trace projector of order 4",""}, False]];
-ToFunction[ProjectorTL[order,1][i1, i2, i3, i4, -j1, -j2, -j3, -j4]==delta[i1,-j1]delta[i2,-j2]delta[i3,-j3]delta[i4,-j4]-((1/((-2 + dimM)*dimM*(4 + dimM)))*2*(delta[i1, -j4]*delta[i2, -j3]*metric[i3, i4]*metric[-j1, -j2] + 
-     delta[i1, -j3]*delta[i2, -j4]*metric[i3, i4]*metric[-j1, -j2] + delta[i1, -j4]*delta[i3, -j2]*metric[i2, i4]*metric[-j1, -j3] + delta[i1, -j2]*delta[i3, -j4]*metric[i2, i4]*metric[-j1, -j3] + 
-     delta[i1, -j3]*delta[i4, -j2]*metric[i2, i3]*metric[-j1, -j4] + delta[i1, -j2]*delta[i4, -j3]*metric[i2, i3]*metric[-j1, -j4] + delta[i2, -j4]*delta[i3, -j1]*metric[i1, i4]*metric[-j2, -j3] + 
-     delta[i2, -j1]*delta[i3, -j4]*metric[i1, i4]*metric[-j2, -j3] + delta[i2, -j3]*delta[i4, -j1]*metric[i1, i3]*metric[-j2, -j4] + delta[i2, -j1]*delta[i4, -j3]*metric[i1, i3]*metric[-j2, -j4] + 
-     delta[i3, -j2]*delta[i4, -j1]*metric[i1, i2]*metric[-j3, -j4] + delta[i3, -j1]*delta[i4, -j2]*metric[i1, i2]*metric[-j3, -j4]) + 
-   (1/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*(delta[i2, -j4]*delta[i4, -j3]*metric[i1, i3]*metric[-j1, -j2] + delta[i2, -j3]*delta[i3, -j4]*metric[i1, i4]*metric[-j1, -j2] + 
-     delta[i1, -j4]*delta[i4, -j3]*metric[i2, i3]*metric[-j1, -j2] + delta[i1, -j3]*delta[i3, -j4]*metric[i2, i4]*metric[-j1, -j2] + delta[i3, -j4]*delta[i4, -j2]*metric[i1, i2]*metric[-j1, -j3] + 
-     delta[i2, -j4]*delta[i3, -j2]*metric[i1, i4]*metric[-j1, -j3] + delta[i1, -j4]*delta[i4, -j2]*metric[i2, i3]*metric[-j1, -j3] + delta[i1, -j2]*delta[i2, -j4]*metric[i3, i4]*metric[-j1, -j3] + 
-     delta[i3, -j2]*delta[i4, -j3]*metric[i1, i2]*metric[-j1, -j4] + delta[i2, -j3]*delta[i4, -j2]*metric[i1, i3]*metric[-j1, -j4] + delta[i1, -j3]*delta[i3, -j2]*metric[i2, i4]*metric[-j1, -j4] + 
-     delta[i1, -j2]*delta[i2, -j3]*metric[i3, i4]*metric[-j1, -j4] + delta[i3, -j4]*delta[i4, -j1]*metric[i1, i2]*metric[-j2, -j3] + delta[i2, -j4]*delta[i4, -j1]*metric[i1, i3]*metric[-j2, -j3] + 
-     delta[i1, -j4]*delta[i3, -j1]*metric[i2, i4]*metric[-j2, -j3] + delta[i1, -j4]*delta[i2, -j1]*metric[i3, i4]*metric[-j2, -j3] + delta[i3, -j1]*delta[i4, -j3]*metric[i1, i2]*metric[-j2, -j4] + 
-     delta[i2, -j3]*delta[i3, -j1]*metric[i1, i4]*metric[-j2, -j4] + delta[i1, -j3]*delta[i4, -j1]*metric[i2, i3]*metric[-j2, -j4] + delta[i1, -j3]*delta[i2, -j1]*metric[i3, i4]*metric[-j2, -j4] + 
-     delta[i2, -j1]*delta[i4, -j2]*metric[i1, i3]*metric[-j3, -j4] + delta[i2, -j1]*delta[i3, -j2]*metric[i1, i4]*metric[-j3, -j4] + delta[i1, -j2]*delta[i4, -j1]*metric[i2, i3]*metric[-j3, -j4] + 
-     delta[i1, -j2]*delta[i3, -j1]*metric[i2, i4]*metric[-j3, -j4]) - (1/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*(3 + dimM)*(delta[i2, -j3]*delta[i4, -j4]*metric[i1, i3]*metric[-j1, -j2] + 
-     delta[i2, -j4]*delta[i3, -j3]*metric[i1, i4]*metric[-j1, -j2] + delta[i1, -j3]*delta[i4, -j4]*metric[i2, i3]*metric[-j1, -j2] + delta[i1, -j4]*delta[i3, -j3]*metric[i2, i4]*metric[-j1, -j2] + 
-     delta[i3, -j2]*delta[i4, -j4]*metric[i1, i2]*metric[-j1, -j3] + delta[i2, -j2]*delta[i3, -j4]*metric[i1, i4]*metric[-j1, -j3] + delta[i1, -j2]*delta[i4, -j4]*metric[i2, i3]*metric[-j1, -j3] + 
-     delta[i1, -j4]*delta[i2, -j2]*metric[i3, i4]*metric[-j1, -j3] + delta[i3, -j3]*delta[i4, -j2]*metric[i1, i2]*metric[-j1, -j4] + delta[i2, -j2]*delta[i4, -j3]*metric[i1, i3]*metric[-j1, -j4] + 
-     delta[i1, -j2]*delta[i3, -j3]*metric[i2, i4]*metric[-j1, -j4] + delta[i1, -j3]*delta[i2, -j2]*metric[i3, i4]*metric[-j1, -j4] + delta[i3, -j1]*delta[i4, -j4]*metric[i1, i2]*metric[-j2, -j3] + 
-     delta[i2, -j1]*delta[i4, -j4]*metric[i1, i3]*metric[-j2, -j3] + delta[i1, -j1]*delta[i3, -j4]*metric[i2, i4]*metric[-j2, -j3] + delta[i1, -j1]*delta[i2, -j4]*metric[i3, i4]*metric[-j2, -j3] + 
-     delta[i3, -j3]*delta[i4, -j1]*metric[i1, i2]*metric[-j2, -j4] + delta[i2, -j1]*delta[i3, -j3]*metric[i1, i4]*metric[-j2, -j4] + delta[i1, -j1]*delta[i4, -j3]*metric[i2, i3]*metric[-j2, -j4] + 
-     delta[i1, -j1]*delta[i2, -j3]*metric[i3, i4]*metric[-j2, -j4] + delta[i2, -j2]*delta[i4, -j1]*metric[i1, i3]*metric[-j3, -j4] + delta[i2, -j2]*delta[i3, -j1]*metric[i1, i4]*metric[-j3, -j4] + 
-     delta[i1, -j1]*delta[i4, -j2]*metric[i2, i3]*metric[-j3, -j4] + delta[i1, -j1]*delta[i3, -j2]*metric[i2, i4]*metric[-j3, -j4]) - 
-   (4*(delta[i3, -j4]*delta[i4, -j3]*metric[i1, i2]*metric[-j1, -j2] + delta[i2, -j4]*delta[i4, -j2]*metric[i1, i3]*metric[-j1, -j3] + delta[i2, -j3]*delta[i3, -j2]*metric[i1, i4]*metric[-j1, -j4] + 
-      delta[i1, -j4]*delta[i4, -j1]*metric[i2, i3]*metric[-j2, -j3] + delta[i1, -j3]*delta[i3, -j1]*metric[i2, i4]*metric[-j2, -j4] + delta[i1, -j2]*delta[i2, -j1]*metric[i3, i4]*metric[-j3, -j4]))/
-    ((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM)) + ((-4 + 4*dimM^2 + dimM^3)*(delta[i3, -j3]*delta[i4, -j4]*metric[i1, i2]*metric[-j1, -j2] + 
-      delta[i2, -j2]*delta[i4, -j4]*metric[i1, i3]*metric[-j1, -j3] + delta[i2, -j2]*delta[i3, -j3]*metric[i1, i4]*metric[-j1, -j4] + delta[i1, -j1]*delta[i4, -j4]*metric[i2, i3]*metric[-j2, -j3] + 
-      delta[i1, -j1]*delta[i3, -j3]*metric[i2, i4]*metric[-j2, -j4] + delta[i1, -j1]*delta[i2, -j2]*metric[i3, i4]*metric[-j3, -j4]))/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM)) + 
-   ((2 + 3*dimM)*(metric[i1, i3]*metric[i2, i4]*metric[-j1, -j4]*metric[-j2, -j3] + metric[i1, i2]*metric[i3, i4]*metric[-j1, -j4]*metric[-j2, -j3] + metric[i1, i4]*metric[i2, i3]*metric[-j1, -j3]*metric[-j2, -j4] + 
-      metric[i1, i2]*metric[i3, i4]*metric[-j1, -j3]*metric[-j2, -j4] + metric[i1, i4]*metric[i2, i3]*metric[-j1, -j2]*metric[-j3, -j4] + metric[i1, i3]*metric[i2, i4]*metric[-j1, -j2]*metric[-j3, -j4]))/
-    ((-2 + dimM)*(-1 + dimM)*(2 + dimM)*(4 + dimM)) - ((6 + 3*dimM + dimM^2)*(metric[i1, i4]*metric[i2, i3]*metric[-j1, -j4]*metric[-j2, -j3] + metric[i1, i3]*metric[i2, i4]*metric[-j1, -j3]*metric[-j2, -j4] + 
-      metric[i1, i2]*metric[i3, i4]*metric[-j1, -j2]*metric[-j3, -j4]))/((-2 + dimM)*(-1 + dimM)*(2 + dimM)*(4 + dimM))),ExplodeProjectorTL[order,1]];
-
-ToFunction[ProjectorTL[order,2][i1, i2, i3, i4, -j1, -j2, -j3, -j4]==metric[i3, i4]*(((2*delta[i1, -j4]*delta[i2, -j3])/((-2 + dimM)*dimM*(4 + dimM)) + (2*delta[i1, -j3]*delta[i2, -j4])/((-2 + dimM)*dimM*(4 + dimM)))*metric[-j1, -j2] + 
-    (-(((3 + dimM)*delta[i1, -j4]*delta[i2, -j2])/((-2 + dimM)*(2 + dimM)*(4 + dimM))) + (delta[i1, -j2]*delta[i2, -j4])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j1, -j3] + 
-    (-(((3 + dimM)*delta[i1, -j3]*delta[i2, -j2])/((-2 + dimM)*(2 + dimM)*(4 + dimM))) + (delta[i1, -j2]*delta[i2, -j3])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j1, -j4] + 
-    ((delta[i1, -j4]*delta[i2, -j1])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i1, -j1]*delta[i2, -j4])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j2, -j3] + 
-    ((delta[i1, -j3]*delta[i2, -j1])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i1, -j1]*delta[i2, -j3])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j2, -j4] + 
-    (-((4*delta[i1, -j2]*delta[i2, -j1])/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM))) + ((-4 + 4*dimM^2 + dimM^3)*delta[i1, -j1]*delta[i2, -j2])/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM)))*metric[-j3, -j4]) + 
-  metric[i2, i4]*((-(((3 + dimM)*delta[i1, -j4]*delta[i3, -j3])/((-2 + dimM)*(2 + dimM)*(4 + dimM))) + (delta[i1, -j3]*delta[i3, -j4])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j1, -j2] + 
-    ((2*delta[i1, -j4]*delta[i3, -j2])/((-2 + dimM)*dimM*(4 + dimM)) + (2*delta[i1, -j2]*delta[i3, -j4])/((-2 + dimM)*dimM*(4 + dimM)))*metric[-j1, -j3] + 
-    ((delta[i1, -j3]*delta[i3, -j2])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i1, -j2]*delta[i3, -j3])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j1, -j4] + 
-    ((delta[i1, -j4]*delta[i3, -j1])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i1, -j1]*delta[i3, -j4])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j2, -j3] + 
-    (-((4*delta[i1, -j3]*delta[i3, -j1])/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM))) + ((-4 + 4*dimM^2 + dimM^3)*delta[i1, -j1]*delta[i3, -j3])/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM)))*metric[-j2, -j4] + 
-    ((delta[i1, -j2]*delta[i3, -j1])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i1, -j1]*delta[i3, -j2])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j3, -j4]) + 
-  metric[i1, i4]*((-(((3 + dimM)*delta[i2, -j4]*delta[i3, -j3])/((-2 + dimM)*(2 + dimM)*(4 + dimM))) + (delta[i2, -j3]*delta[i3, -j4])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j1, -j2] + 
-    ((delta[i2, -j4]*delta[i3, -j2])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i2, -j2]*delta[i3, -j4])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j1, -j3] + 
-    (-((4*delta[i2, -j3]*delta[i3, -j2])/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM))) + ((-4 + 4*dimM^2 + dimM^3)*delta[i2, -j2]*delta[i3, -j3])/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM)))*metric[-j1, -j4] + 
-    ((2*delta[i2, -j4]*delta[i3, -j1])/((-2 + dimM)*dimM*(4 + dimM)) + (2*delta[i2, -j1]*delta[i3, -j4])/((-2 + dimM)*dimM*(4 + dimM)))*metric[-j2, -j3] + 
-    ((delta[i2, -j3]*delta[i3, -j1])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i2, -j1]*delta[i3, -j3])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j2, -j4] + 
-    (-(((3 + dimM)*delta[i2, -j2]*delta[i3, -j1])/((-2 + dimM)*(2 + dimM)*(4 + dimM))) + (delta[i2, -j1]*delta[i3, -j2])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j3, -j4]) + 
-  metric[i2, i3]*(((delta[i1, -j4]*delta[i4, -j3])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i1, -j3]*delta[i4, -j4])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j1, -j2] + 
-    ((delta[i1, -j4]*delta[i4, -j2])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i1, -j2]*delta[i4, -j4])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j1, -j3] + 
-    ((2*delta[i1, -j3]*delta[i4, -j2])/((-2 + dimM)*dimM*(4 + dimM)) + (2*delta[i1, -j2]*delta[i4, -j3])/((-2 + dimM)*dimM*(4 + dimM)))*metric[-j1, -j4] + 
-    (-((4*delta[i1, -j4]*delta[i4, -j1])/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM))) + ((-4 + 4*dimM^2 + dimM^3)*delta[i1, -j1]*delta[i4, -j4])/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM)))*metric[-j2, -j3] + 
-    ((delta[i1, -j3]*delta[i4, -j1])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i1, -j1]*delta[i4, -j3])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j2, -j4] + 
-    ((delta[i1, -j2]*delta[i4, -j1])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i1, -j1]*delta[i4, -j2])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j3, -j4]) + 
-  metric[i1, i3]*(((delta[i2, -j4]*delta[i4, -j3])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i2, -j3]*delta[i4, -j4])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j1, -j2] + 
-    (-((4*delta[i2, -j4]*delta[i4, -j2])/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM))) + ((-4 + 4*dimM^2 + dimM^3)*delta[i2, -j2]*delta[i4, -j4])/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM)))*metric[-j1, -j3] + 
-    ((delta[i2, -j3]*delta[i4, -j2])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i2, -j2]*delta[i4, -j3])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j1, -j4] + 
-    ((delta[i2, -j4]*delta[i4, -j1])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i2, -j1]*delta[i4, -j4])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j2, -j3] + 
-    ((2*delta[i2, -j3]*delta[i4, -j1])/((-2 + dimM)*dimM*(4 + dimM)) + (2*delta[i2, -j1]*delta[i4, -j3])/((-2 + dimM)*dimM*(4 + dimM)))*metric[-j2, -j4] + 
-    (-(((3 + dimM)*delta[i2, -j2]*delta[i4, -j1])/((-2 + dimM)*(2 + dimM)*(4 + dimM))) + (delta[i2, -j1]*delta[i4, -j2])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j3, -j4]) + 
-  metric[i1, i2]*((-((4*delta[i3, -j4]*delta[i4, -j3])/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM))) + ((-4 + 4*dimM^2 + dimM^3)*delta[i3, -j3]*delta[i4, -j4])/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM)))*metric[-j1, -j2] + 
-    ((delta[i3, -j4]*delta[i4, -j2])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i3, -j2]*delta[i4, -j4])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j1, -j3] + 
-    (-(((3 + dimM)*delta[i3, -j3]*delta[i4, -j2])/((-2 + dimM)*(2 + dimM)*(4 + dimM))) + (delta[i3, -j2]*delta[i4, -j3])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j1, -j4] + 
-    ((delta[i3, -j4]*delta[i4, -j1])/((-2 + dimM)*(2 + dimM)*(4 + dimM)) - ((3 + dimM)*delta[i3, -j1]*delta[i4, -j4])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j2, -j3] + 
-    (-(((3 + dimM)*delta[i3, -j3]*delta[i4, -j1])/((-2 + dimM)*(2 + dimM)*(4 + dimM))) + (delta[i3, -j1]*delta[i4, -j3])/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*metric[-j2, -j4] + 
-    ((2*delta[i3, -j2]*delta[i4, -j1])/((-2 + dimM)*dimM*(4 + dimM)) + (2*delta[i3, -j1]*delta[i4, -j2])/((-2 + dimM)*dimM*(4 + dimM)))*metric[-j3, -j4]) + 
-  metric[i1, i4]*metric[i2, i3]*(-((2*(2 + dimM)*metric[-j1, -j4]*metric[-j2, -j3])/((-2 + dimM)*dimM*(4 + dimM))) + (4*metric[-j1, -j3]*metric[-j2, -j4])/((-2 + dimM)*dimM*(4 + dimM)) + (4*metric[-j1, -j2]*metric[-j3, -j4])/((-2 + dimM)*dimM*(4 + dimM))) + 
-  metric[i1, i3]*metric[i2, i4]*((4*metric[-j1, -j4]*metric[-j2, -j3])/((-2 + dimM)*dimM*(4 + dimM)) - (2*(2 + dimM)*metric[-j1, -j3]*metric[-j2, -j4])/((-2 + dimM)*dimM*(4 + dimM)) + (4*metric[-j1, -j2]*metric[-j3, -j4])/((-2 + dimM)*dimM*(4 + dimM))) + 
-  metric[i1, i2]*metric[i3, i4]*((4*metric[-j1, -j4]*metric[-j2, -j3])/((-2 + dimM)*dimM*(4 + dimM)) + (4*metric[-j1, -j3]*metric[-j2, -j4])/((-2 + dimM)*dimM*(4 + dimM)) - (2*(2 + dimM)*metric[-j1, -j2]*metric[-j3, -j4])/((-2 + dimM)*dimM*(4 + dimM))),ExplodeProjectorTL[order,2]];
-ToFunction[ProjectorT[order,1][i1, i2, i3, i4, -j1, -j2, -j3, -j4]==(1/((-2 + dimM)*dimM*(4 + dimM)))*2*(delta[i1, -j4]*delta[i2, -j3]*metric[i3, i4]*metric[-j1, -j2] + 
-     delta[i1, -j3]*delta[i2, -j4]*metric[i3, i4]*metric[-j1, -j2] + delta[i1, -j4]*delta[i3, -j2]*metric[i2, i4]*metric[-j1, -j3] + delta[i1, -j2]*delta[i3, -j4]*metric[i2, i4]*metric[-j1, -j3] + 
-     delta[i1, -j3]*delta[i4, -j2]*metric[i2, i3]*metric[-j1, -j4] + delta[i1, -j2]*delta[i4, -j3]*metric[i2, i3]*metric[-j1, -j4] + delta[i2, -j4]*delta[i3, -j1]*metric[i1, i4]*metric[-j2, -j3] + 
-     delta[i2, -j1]*delta[i3, -j4]*metric[i1, i4]*metric[-j2, -j3] + delta[i2, -j3]*delta[i4, -j1]*metric[i1, i3]*metric[-j2, -j4] + delta[i2, -j1]*delta[i4, -j3]*metric[i1, i3]*metric[-j2, -j4] + 
-     delta[i3, -j2]*delta[i4, -j1]*metric[i1, i2]*metric[-j3, -j4] + delta[i3, -j1]*delta[i4, -j2]*metric[i1, i2]*metric[-j3, -j4]) + 
-   (1/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*(delta[i2, -j4]*delta[i4, -j3]*metric[i1, i3]*metric[-j1, -j2] + delta[i2, -j3]*delta[i3, -j4]*metric[i1, i4]*metric[-j1, -j2] + 
-     delta[i1, -j4]*delta[i4, -j3]*metric[i2, i3]*metric[-j1, -j2] + delta[i1, -j3]*delta[i3, -j4]*metric[i2, i4]*metric[-j1, -j2] + delta[i3, -j4]*delta[i4, -j2]*metric[i1, i2]*metric[-j1, -j3] + 
-     delta[i2, -j4]*delta[i3, -j2]*metric[i1, i4]*metric[-j1, -j3] + delta[i1, -j4]*delta[i4, -j2]*metric[i2, i3]*metric[-j1, -j3] + delta[i1, -j2]*delta[i2, -j4]*metric[i3, i4]*metric[-j1, -j3] + 
-     delta[i3, -j2]*delta[i4, -j3]*metric[i1, i2]*metric[-j1, -j4] + delta[i2, -j3]*delta[i4, -j2]*metric[i1, i3]*metric[-j1, -j4] + delta[i1, -j3]*delta[i3, -j2]*metric[i2, i4]*metric[-j1, -j4] + 
-     delta[i1, -j2]*delta[i2, -j3]*metric[i3, i4]*metric[-j1, -j4] + delta[i3, -j4]*delta[i4, -j1]*metric[i1, i2]*metric[-j2, -j3] + delta[i2, -j4]*delta[i4, -j1]*metric[i1, i3]*metric[-j2, -j3] + 
-     delta[i1, -j4]*delta[i3, -j1]*metric[i2, i4]*metric[-j2, -j3] + delta[i1, -j4]*delta[i2, -j1]*metric[i3, i4]*metric[-j2, -j3] + delta[i3, -j1]*delta[i4, -j3]*metric[i1, i2]*metric[-j2, -j4] + 
-     delta[i2, -j3]*delta[i3, -j1]*metric[i1, i4]*metric[-j2, -j4] + delta[i1, -j3]*delta[i4, -j1]*metric[i2, i3]*metric[-j2, -j4] + delta[i1, -j3]*delta[i2, -j1]*metric[i3, i4]*metric[-j2, -j4] + 
-     delta[i2, -j1]*delta[i4, -j2]*metric[i1, i3]*metric[-j3, -j4] + delta[i2, -j1]*delta[i3, -j2]*metric[i1, i4]*metric[-j3, -j4] + delta[i1, -j2]*delta[i4, -j1]*metric[i2, i3]*metric[-j3, -j4] + 
-     delta[i1, -j2]*delta[i3, -j1]*metric[i2, i4]*metric[-j3, -j4]) - (1/((-2 + dimM)*(2 + dimM)*(4 + dimM)))*(3 + dimM)*(delta[i2, -j3]*delta[i4, -j4]*metric[i1, i3]*metric[-j1, -j2] + 
-     delta[i2, -j4]*delta[i3, -j3]*metric[i1, i4]*metric[-j1, -j2] + delta[i1, -j3]*delta[i4, -j4]*metric[i2, i3]*metric[-j1, -j2] + delta[i1, -j4]*delta[i3, -j3]*metric[i2, i4]*metric[-j1, -j2] + 
-     delta[i3, -j2]*delta[i4, -j4]*metric[i1, i2]*metric[-j1, -j3] + delta[i2, -j2]*delta[i3, -j4]*metric[i1, i4]*metric[-j1, -j3] + delta[i1, -j2]*delta[i4, -j4]*metric[i2, i3]*metric[-j1, -j3] + 
-     delta[i1, -j4]*delta[i2, -j2]*metric[i3, i4]*metric[-j1, -j3] + delta[i3, -j3]*delta[i4, -j2]*metric[i1, i2]*metric[-j1, -j4] + delta[i2, -j2]*delta[i4, -j3]*metric[i1, i3]*metric[-j1, -j4] + 
-     delta[i1, -j2]*delta[i3, -j3]*metric[i2, i4]*metric[-j1, -j4] + delta[i1, -j3]*delta[i2, -j2]*metric[i3, i4]*metric[-j1, -j4] + delta[i3, -j1]*delta[i4, -j4]*metric[i1, i2]*metric[-j2, -j3] + 
-     delta[i2, -j1]*delta[i4, -j4]*metric[i1, i3]*metric[-j2, -j3] + delta[i1, -j1]*delta[i3, -j4]*metric[i2, i4]*metric[-j2, -j3] + delta[i1, -j1]*delta[i2, -j4]*metric[i3, i4]*metric[-j2, -j3] + 
-     delta[i3, -j3]*delta[i4, -j1]*metric[i1, i2]*metric[-j2, -j4] + delta[i2, -j1]*delta[i3, -j3]*metric[i1, i4]*metric[-j2, -j4] + delta[i1, -j1]*delta[i4, -j3]*metric[i2, i3]*metric[-j2, -j4] + 
-     delta[i1, -j1]*delta[i2, -j3]*metric[i3, i4]*metric[-j2, -j4] + delta[i2, -j2]*delta[i4, -j1]*metric[i1, i3]*metric[-j3, -j4] + delta[i2, -j2]*delta[i3, -j1]*metric[i1, i4]*metric[-j3, -j4] + 
-     delta[i1, -j1]*delta[i4, -j2]*metric[i2, i3]*metric[-j3, -j4] + delta[i1, -j1]*delta[i3, -j2]*metric[i2, i4]*metric[-j3, -j4]) - 
-   (4*(delta[i3, -j4]*delta[i4, -j3]*metric[i1, i2]*metric[-j1, -j2] + delta[i2, -j4]*delta[i4, -j2]*metric[i1, i3]*metric[-j1, -j3] + delta[i2, -j3]*delta[i3, -j2]*metric[i1, i4]*metric[-j1, -j4] + 
-      delta[i1, -j4]*delta[i4, -j1]*metric[i2, i3]*metric[-j2, -j3] + delta[i1, -j3]*delta[i3, -j1]*metric[i2, i4]*metric[-j2, -j4] + delta[i1, -j2]*delta[i2, -j1]*metric[i3, i4]*metric[-j3, -j4]))/
-    ((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM)) + ((-4 + 4*dimM^2 + dimM^3)*(delta[i3, -j3]*delta[i4, -j4]*metric[i1, i2]*metric[-j1, -j2] + 
-      delta[i2, -j2]*delta[i4, -j4]*metric[i1, i3]*metric[-j1, -j3] + delta[i2, -j2]*delta[i3, -j3]*metric[i1, i4]*metric[-j1, -j4] + delta[i1, -j1]*delta[i4, -j4]*metric[i2, i3]*metric[-j2, -j3] + 
-      delta[i1, -j1]*delta[i3, -j3]*metric[i2, i4]*metric[-j2, -j4] + delta[i1, -j1]*delta[i2, -j2]*metric[i3, i4]*metric[-j3, -j4]))/((-2 + dimM)*dimM*(2 + dimM)*(4 + dimM)) + 
-   ((2 + 3*dimM)*(metric[i1, i3]*metric[i2, i4]*metric[-j1, -j4]*metric[-j2, -j3] + metric[i1, i2]*metric[i3, i4]*metric[-j1, -j4]*metric[-j2, -j3] + metric[i1, i4]*metric[i2, i3]*metric[-j1, -j3]*metric[-j2, -j4] + 
-      metric[i1, i2]*metric[i3, i4]*metric[-j1, -j3]*metric[-j2, -j4] + metric[i1, i4]*metric[i2, i3]*metric[-j1, -j2]*metric[-j3, -j4] + metric[i1, i3]*metric[i2, i4]*metric[-j1, -j2]*metric[-j3, -j4]))/
-    ((-2 + dimM)*(-1 + dimM)*(2 + dimM)*(4 + dimM)) - ((6 + 3*dimM + dimM^2)*(metric[i1, i4]*metric[i2, i3]*metric[-j1, -j4]*metric[-j2, -j3] + metric[i1, i3]*metric[i2, i4]*metric[-j1, -j3]*metric[-j2, -j4] + 
-      metric[i1, i2]*metric[i3, i4]*metric[-j1, -j2]*metric[-j3, -j4]))/((-2 + dimM)*(-1 + dimM)*(2 + dimM)*(4 + dimM)),ExplodeProjectorT[order,1]];
-ToFunction[ProjectorT[order,2][i1, i2, i3, i4, -j1, -j2, -j3, -j4],ExplodeProjectorT[order,2]]
-]]];
-SetOptions[ToRule,MetricOn->None];
-]
-]
 
 
 (* ::Input::Initialization:: *)
