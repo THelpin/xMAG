@@ -20,11 +20,11 @@
 
 
 (* ::Input::Initialization:: *)
-xAct`xMAG`$Version={"0.1.0",{2021,11,09}}
+xAct`xMAG`$Version={"0.1.0",{2023,05,18}}
 
 
 (* ::Input::Initialization:: *)
-xAct`xBrauer`$xTensorVersionExpected={"1.2.0",{2021,10,17}};
+xAct`xMAG`$xTensorVersionExpected={"1.2.0",{2021,10,17}};
 xAct`xMAG`$xTrasVersionExpected={"1.0.6",{2014,10,30}};
 
 
@@ -47,7 +47,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 (* :Summary: Metric-Affine Gravity framework. *)
 
-(* :Brief Discussion: TraceFree is a package to demonstrate using xTension. It adds an option, TraceFree, to DefTensor to declare a tensor trace-free at the time of definition. *)
+(* :Brief Discussion: xMAG is a package to study metric affine gravity using using xTensor. *)
   
 (* :Context: xAct`xMAG` *)
 
@@ -77,7 +77,7 @@ If[Unevaluated[xAct`xCore`Private`$LastPackage]===xAct`xCore`Private`$LastPackag
 (* ::Input::Initialization:: *)
 Off[General::nostdvar]
 Off[General::nostdopt]
-BeginPackage["xAct`xMAG`",{"xAct`xTensor`","xAct`xPert`","xAct`xTras`","xAct`xPerm`","xAct`xCore`","xAct`ExpressionManipulation`","xAct`TraceFree`","xAct`xBrauer`"}]
+BeginPackage["xAct`xMAG`",{"xAct`xTensor`","xAct`xPert`","xAct`xPerm`","xAct`xCore`","xAct`ExpressionManipulation`","xAct`TraceFree`","xAct`xTras`","xAct`xBrauer`"}]
 
 
 (* ::Input::Initialization:: *)
@@ -107,6 +107,11 @@ Print[xAct`xCore`Private`bars]]
 
 
 (* ::Input::Initialization:: *)
+$RiemannSign=-1;
+$RicciSign=1;
+
+
+(* ::Input::Initialization:: *)
 GiveOutputString[Acceleration,vector_]:=GiveOutputString[Acceleration]
 
 
@@ -114,32 +119,34 @@ GiveOutputString[Acceleration,vector_]:=GiveOutputString[Acceleration]
 (*** VERSIONS ***)
 $Version::usage="$Version is a global variable giving the version of the package xMAG in use.";
 $xTensorVersionExpected::usage="$xTensorVersionExpected is a global variable giving the oldest possible version of the package xTensor which is required by the version of the package xMAG in use.";
-$xTrasVersionExpected::usage="$xTrasVersionExpected is a global variable giving the oldest possible version of the package xPert which is required by the version of the package xMAG in use.";
 
 
 (* ::Input::Initialization:: *)
 (**************************************************************************************************************)
-(**************************************** Convienient functions ***********************************************)
+(**************************************** Convenient functions ***********************************************)
 (**************************************************************************************************************)
-SafeCanonical::usage="SafeCanonical[e] is ToCanonical with the option UseMetricOnVBundle -> None";
 ToFunction::usage="ToFunction[exp1==exp2,functionname] automatically transforms an equality between two tensorial expressions into a function with name 
 functionname.";
 InverseMakeRule::usage="InverseMakeRule[rule] inverse the rule when it is possible.";
-LeviCivitaQ::usage="LeviCivitaQ[cd,g] gives true if cd is the Levi-Civita connection associated to the metric g.";
+(* LeviCivitaQ::usage="LeviCivitaQ[covd,g] returns True if covd is the Levi-Civita connection associated with g. LeviCivitaQ[covd] returns True if covd is 
+the Levi-Civita connection associated with the metric MasterOf[covd] if any."; *)
 NonMetricityQ::usage="NonMetricityQ[cd,g] gives True if cd is not metric compatible with respect to g and False otherwise.";
-TraceFreeQ::usage="TraceFreeQ[tensor[inds],met] returns True if the contraction with the metric met of any pair of the indices of tensor is zero.";
 
 
 (**************************************************************************************************************)
-(********** The principal option for the extension of the xTensor/xTras version of DefCovD ********************)
+(********** The principal option for the extension of the xTensor of DefCovD ********************)
 (**************************************************************************************************************)
-DefMAGTensors::usage="DefMAGTensors is an option for DefCovD. Use DefMAGTensors -> met, or DefMAGTensors -> Null. Its default value is Null.\ 
-When Torsion is True and FromMetric is set to Null, DefMAGTensors -> met triggers the definitions and relations appropriate \ 
-	for a non-Riemaniann geometry with independent GL(d) connection and metric met.
-When Torsion is True and FromMetric is set to met, DefMAGTensors -> met triggers the definitions and relations appropriate \ 
-	for a non-Riemaniann geometry with metric compatible connection with torsion and metric met.
-When Torsion is False and FromMetric is set to Null, DefMAGTensors -> met triggers the definitions and relations appropriate \ 
-	for a non-Riemaniann geometry with independent symmetric connection and metric met.";
+Master::usage="Master is an option for DefType commands specifying the master symbol of the defined symbol. By default, no master is associated.
+In xBrauer Master is an important option for DefTensor. Use Master -> met, or Master -> Null. Its default value is Null.
+DefTensor[tens[inds],...,Master->met] defines a tensor tens with indices inds which can be raised, lowered or contracted with metric met only. 
+DefTensor[tens[inds],M,...,Master->Null] defines a tensor tens with indices inds which can be raised, lowered or contracted with the first of metric of M.
+In xMAG Master is an important option for DefCovD. Use Master -> met, or Master -> Null. Its default value is Null.\ 
+When Torsion is True and FromMetric is set to Null, Master -> met triggers the definitions and relations appropriate \ 
+	for a metric-affine Riemaniann geometry with an independent connection with torsion and nonmetricity and metric met.
+When Torsion is True and FromMetric is set to met, Master -> met triggers the definitions and relations appropriate \ 
+	for a metric-affine Riemannian geometry with a metric compatible connection with torsion and metric met.
+When Torsion is False and FromMetric is set to Null, Master -> met triggers the definitions and relations appropriate \ 
+	for a metric-affine Riemannian geometry with an independent symmetric connection and metric met.";
 
 (**************************************************************************************************************)
 (************ Extended "Non-Riemannian" connection tensors define in the extension of DefCovD *****************)
@@ -147,7 +154,7 @@ When Torsion is False and FromMetric is set to Null, DefMAGTensors -> met trigge
 Distortion::usage =
 	"Distortion is a reserved word in xMAG. It is used to generated the name of the Distortion tensor.";
 DistortionTrace::usage =
-	"DistortionTrace[covd][n] returns the n trace vector of the distortion tensor associated to the covariant \
+	"DistortionTrace[n][covd] returns the n trace vector of the distortion tensor associated to the covariant \
 derivative covd.";
 TFDistortion::usage =
 	"TFDistortion[covd] returns the traceless distortion tensor associated to a connection covd acting on a tangent bundle.";
@@ -177,15 +184,16 @@ ContorsionToTFContorsion::usage="ContorsionToTFContorsion[expr, covd] expands ex
 NonMetricity::usage =
 	"NonMetricity is a reserved word in xMAG. It is used to generated the name \
 of the nonmetricity tensor.";
+NonMetricityTrace::usage =
+	"NonMetricityTrace[n][covd] returns the nth trace vector of the NonMetricity tensor associated to the covariant \
+derivative covd.";
 TFNonMetricity::usage ="TFNonMetricity[covd] returns the Traceless NonMetricity tensor associated to a connection covd acting on a tangent bundle.";
 TFNonMetricityToNonMetricity::usage="TFNonMetricityToNonMetricity[expr, covd] expands expr expressing all TFNonMetricity tensors of covd in terms of the NonMetricity\
  and other tensors of covd.";
 NonMetricityToTFNonMetricity::usage="NonMetricityToTFNonMetricity[expr, covd] expands expr expressing all NonMetricity tensors of covd in terms of the TFNonMetricity\
  and other tensors of covd.";
-WeylVector::usage ="WeylVector is a reserved word in xMAG. It is used to generated the name \
-of the WeylVector vector.";
-WeylCoVector::usage ="WeylCoVector is a reserved word in xMAG. It is used to generated the name \
-of the WeylCoVector vector.";
+(*WeylVector::usage ="WeylVector is a reserved word in xMAG. It is used to generated the name \
+of the WeylVector vector.";*)
 TFTorsion::usage ="TFTorsion[covd] returns the Traceless Torsion tensor associated to a connection covd acting on a tangent bundle.";
 TFTorsionToTorsion::usage="TFTorsionToTorsion[expr, covd] expands expr expressing all TFTorsion tensors of covd in terms of the Torsion and other tensors of covd.";
 TorsionToTFTorsion::usage="TorsionToTFTorsion[expr, covd] expands expr expressing all Torsion tensors of covd in terms of the TFTorsion and other tensors of covd.";
@@ -208,7 +216,7 @@ If the second argument is a list of covariant derivatives the command is applied
 (**************** ConnectionRelations which is similar to CurvatureRelations in xTensor ***********************)
 (**************************************************************************************************************)
 ConnectionRelations::usage="ConnectionRelations is a Boolean option for DefCovD giving whether automatic rules relating \
-the connection tensors (Distortion/Torsion/NonMetricity) of a newly define covariant derivative should be defined or not. Its default value is True.
+the connection tensors (Distortion/Torsion/NonMetricity) of a newly define covariant derivative should be set or not. Its default value is True.
 ConnectionRelations[covd, Distortion] gives a list of the relations between the contracted Distortion of covd and the associated Trace vectors. \ 
 ConnectionRelations[covd,Torsion] yield the corresponding rule for the torsion and ConnectionRelations[covd,NonMetricity] for NonMetricity.";
 ConnectionRelationsQ::usage="ConnectionRelationsQ[CD] returns True if all of the connections \
@@ -217,8 +225,10 @@ ClearConnectionRelations::usage="ClearConnectionRelations[CD] removes the automa
 relations for the covariant derivative CD.";
 SetConnectionRelations::usage="SetConnectionRelations[CD] sets the automatic connection \
 relations for the covariant derivative CD.";
+ClearCurvatureRelations::usage="todo";
+SetCurvatureRelations::usage="todo";d
 GradMetricToNonMetricity::usage="GradMetricToNonMetricity is a Boolean option for DefCovD giving whether automatic rules transforming covd[-a]metric[-b,-c] to NonMetricity[-a,-b,-c]\
- should be defined or not. Its default value is True. GradMetricToNonMetricity[covd] gives the rule which transforms covd[-a]metric[-b,-c] to NonMetricitycovd[-a,-b,-c].";
+ should be set or not. Its default value is True. GradMetricToNonMetricity[covd] gives the rule which transforms covd[-a]metric[-b,-c] to NonMetricitycovd[-a,-b,-c].";
 GradMetricToNonMetricityQ::usage="GradMetricToNonMetricityQ[CD] returns True if the rule from CD[-a]metric[-b,-c] to NonMetricityCD[-a,-b,-c]\
  for the covariant derivative CD have been set as automatic rules, and False otherwise.";
 ClearGradMetricToNonMetricity::usage ="ClearGradMetricToNonMetricity[CD] removes GradMetricToNonMetricity[CD] as an automatic rule.";
@@ -227,14 +237,36 @@ SetGradMetricToNonMetricity::usage ="SetGradMetricToNonMetricity[CD] sets GradMe
 (**************************************************************************************************************)
 (***************************** Function related to the general connection *************************************)
 (**************************************************************************************************************)
-MAGChristoffelTensorStart::usage="ChristoffelToDistortionStart[CD,g] start the automatic transformation of ChristoffelcdCD to the distortionCD tensor where cd is the metric compatible connection associated to the metric g.";
-MAGChristoffelTensorStop::usage="ChristoffelToDistortionStop[CD,g] stop the automatic transformation of ChristoffelcdCD to the distortionCD tensor where cd is the metric compatible connection associated to the metric g.";
-BreakDistortion::usage="BreakDistortion[exp,cd,metric] transforms all occurences of Distortioncd in exp into NonMetricitycd and Torsioncd terms";
-BreakDisformation::usage="BreakDisformation[exp,cd,metric] transforms all occurences of Disformation in exp into the sum of nonmetricity tensors";
-BreakContorsion::usage="BreakBreakContorsion[exp,cd,metric] transforms all occurences of Disformation in exp into the sum of torsion tensors";
+MAGChristoffelTensorStart::usage="ChristoffelToDistortionStart[CD,g] start the automatic transformation of ChristoffelcdCD to the distortionCD tensor 
+where cd is the metric compatible connection associated to the metric g.";
+MAGChristoffelTensorStop::usage="ChristoffelToDistortionStop[CD,g] stop the automatic transformation of ChristoffelcdCD to the distortionCD tensor 
+where cd is the metric compatible connection associated to the metric g.";
+BreakDistortion::usage="BreakDistortion[exp,cd,metric] transforms all occurences of Distortioncd in exp into NonMetricitycd and Torsioncd terms.
+The inputs cd and metric are optional.";
+BreakDisformation::usage="BreakDisformation[exp,cd,metric] transforms all occurences of Disformation in exp into the sum of nonmetricity tensors.
+The inputs cd and metric are optional.";
+BreakContorsion::usage="BreakContorsion[exp,cd,metric] transforms all occurences of Disformation in exp into the sum of torsion tensors. 
+The inputs cd and metric are optional.";
 ToDistortion::usage="ToDistortion[exp,CD,g] decomposes the curvature tensors and covariant derivative CD in exp into curvature tensors and
 covariant derivative associated to the Levi-Civita connection of the metric g plus terms proportional to the distortion tensors. 
 It's also transforms non-metricity, torsion, disformation and contorsion tensors into the distortion tensor.";
+ToDisformation::usage="When the connection has non metricity but zero Torsion ToDisformation[exp,CD,g] decomposes the curvature tensors and covariant derivative CD 
+in exp into curvature tensors and covariant derivative associated to the Levi-Civita connection of the metric g plus terms proportional to the disformation tensors. 
+When the connection as non metricity and Torsion ToDisformation[exp,CD,g] decomposes the distortion tensor as a sum of disformation and contorsion.";
+ToContorsion::usage="When the connection has Torsion  but zero non-metricity ToContorsion[exp,CD,g] decomposes the curvature tensors and covariant derivative CD 
+in exp into curvature tensors and covariant derivative associated to the Levi-Civita connection of the metric g plus terms proportional to the contorsion tensors. 
+When the connection as non metricity and Torsion ToContorsion[exp,CD,g] decomposes the distortion tensor as a sum of disformation and contorsion.";
+ToDistortion::usage="ToDistortion[exp,CD,g] decomposes the curvature tensors and covariant derivative CD in exp into curvature tensors and
+covariant derivative associated to the Levi-Civita connection of the metric g plus terms proportional to the distortion tensors. 
+It's also transforms non-metricity, torsion, disformation and contorsion tensors into the distortion tensor.";
+(*********************************************************************************************************************)
+(******************** Perturbation pour la connection affine independante de la m\[EAcute]trique******************************)
+(*********************************************************************************************************************)
+DefConnectionPerturbation::usage="DefConnectionPerturbation[christoffel,pert,param] constructs a number of definitions for the perturbation of the given christoffel symbol, which must exist already.
+A tensor pert[LI[order],a,-b,-c] is defined on the vbundle of christoffel and the parameter param will be defined and used to expand the perturbed expressions.
+DefConnectionPerturbation is also a Boolean option for DefCovD.";
+(*DefConnectionVariation::usage="DefConnectionVariation";*)
+
 (*********************************************************************************************************************)
 (******************** Function related to the trace decomposition of a curvature tensor ******************************)
 (*********************************************************************************************************************)
@@ -242,41 +274,6 @@ RiemannToWeyl::usage="RiemannToWeyl[expr, covd] expands expr expressing all Riem
  If the second argument is a list of covariant derivatives the command is applied sequentially on expr. RiemannToWeyl[expr] expands all Riemann tensors.";
 WeylToRiemann::usage="WeylToRiemann[expr, covd] expands expr expressing all Weyl tensors of covd in terms of the Riemann and other tensors of covd.\
  If the second argument is a list of covariant derivatives the command is applied sequentially on expr. WeylToRiemann[expr] expands all Weyl tensors.";
-(**************************************************************************************************************)
-(************* Irreducible decomposition of a tensor under the action of the orthogonal group *****************)
-(**************************************************************************************************************)
-
-(************* Trace Decomposition of a tensor ********************)
-ToTraceTensor::usage="ToTraceTensor[tens,f] projects tens onto the space of f-trace tensors using TraceProjector[n,f] where n is the order of tens.";
-ToTracelessTensor::usage="ToTracelessTensor[tens,f] projects tens onto the space of f-traceless tensors using TracelessProjector[n,f] where n is the order of tens.";
-TracelessRule::usage="TracelessRule[tens] stores the rule which expresses the traceless tensor associated to tens in terms of tens. For the rule to exist one has to\
-first use DefTraceless[tens].";
-DefTraceless::usage="DefTraceless[tens,metric] defines the traceless tensor associated to tens and the rule TracelessRule[tens].";
-UndefTraceless::usage="DefTraceless[tens] undefines the traceless tensor associated to tens and the rule TracelessRule[tens].";
-DefTraceDecomposition::usage="DefTraceDecomposition[tens,metric] defines the f-traceless tensors associated to tens, the rules TraceDecompositionRules[tens]\
- and TraceDecompose[tensor].";
-TraceDecompositionRules::usage="TraceDecompositionRules[tens] stores the rules which expresses the f-traceless tensor associated to tens in terms of tens.\
-For the rule to exist one has to first use DefTraceDecomposition[tens].";
-TraceDecompose::usage="TraceDecompose[tens] decompose tens into a the sum of f-trace(less) tensors associated to tens.";
-UndefTraceDecomposition::usage="UndefTraceDecomposition[tens] undefines the f-trace(less) tensors associated to tens and the rules TraceDecompositionRules[tens]\
-and TraceDecompose[tens].";
-(************* Trying to combine trace decomposition and Young projection ********************)
-IRDMethod::usage="IRDMethod is an option of DefIRD. It can be set to either YoungProject or SNYoungProject.\
-When IRDMethod is set to YoungProject DefIRD[tens[inds],..] projects tens on irreps using the Young operators.\
-When IRDMethod is set to SNYoungProject DefIRD[tens[inds],..] projects tens on irreps using the Semi Normal Young units.";
-DefIRD::usage="DefIRD[tens[inds],List] defines the irreducible tensors under the action of the orthogonal group\
- associated to the traceless part of the tensor tens. List has to be a list of integer from 1 to the number of\
- indices of tens. List tells DefIRD how to map the inds of tens to the standard young tableau labelling the\
- irreducible reprensations of GL(d). DefIRD[tens[inds],List] also defines IRDRules[tens] and IRDMapping[tens].\
- IRDMapping[tens] stores the mapping between standard Young tableaux and the defined irreducibles tensors.";
-IRDRules::usage="IRDRules[tensor] return a list of rules for the irreducible decomposition of tensor under the action \
- of the orthogonal group. For these rules to be defined one should first call DefIRD[tensor[inds],...].";
-IRDMapping::usage="IRDMapping[tensor] returns a list corresponding to the mapping between standard Young tableaux\
-and the irreducibles tensors defined with DefIRD[tensor[inds],...].";
-ToIRD::usage="ToIRD[tens,IRDMethod\[Rule]method]] decomposes a traceless tensor tens (or its traceless part if not traceless) into its irreducible pieces\
- under the action of the orthogonal group. For these rules to be defined one should first call DefIRD[tensor[inds],...]."; 
-UndefIRD::usage="UndefIRD[tens] undefines irreducible tensors, IRDMapping[tens] and IRDRules[tens] which were defined\
-with DefIRD[tens].";
 (************************************************************************************************************************************)
 (****************************** Linear/Projective Transformations - Weyl Transformation *********************************************)
 (************************************************************************************************************************************) 
@@ -287,7 +284,7 @@ LinearTransform::usage="LinearTransform[n,exp] applies the linear transformation
 ProjectiveTransformation::usage="ProjectiveTransformation[CD] returns the rule corresponding to the projective transformation of the distortion tensor associated\
  to the covariant derivative CD.";
 ProjectiveTransform::usage="ProjectiveTransform[exp,CD] applies the projective transformation to all 
-occurences of the distortion tensor appearing in the modified expr.";
+occurences of the distortion tensor appearing in the ToDistortion[expr,CD].";
 ProjectiveQ::usage="ProjectiveQ[exp,CD,g] return true if exp is projective invariant, false otherwise.";
 ConformalTransform::usage="ConformalTransform[exp,g,gc] apply the conformal rules from metric g to metric gc to exp.";
 WeylTransformation::usage="WeylTransformation[cd1,cd2] list the Weyl transformation rules from metric g1 covariant derivative cd1 to the metric g2 covariant derivative cd2.";
@@ -302,7 +299,6 @@ Normalization::usage="Normalization is an option for StartInducedDecomposition. 
 StopInducedDecomposition::usafe="StopInducedDecomposition[CD,indmetric] undefines tensors associated with the induced decomposition with induced metric h and independent covariant/ 
 derivative CD.";
 AccelerationToGradNormal::usage="AccelerationToGradNormal[exp] replaces all occurences of Acceleration vector to the covariant derivative of the normal vector.";
-InducedMetricQ::usage="InducedMetricQ[met] returns true if met is the induced metric of another metric.";
 Extrinsic::usage="Extrinsic is a reserved word in xMAG. It is used to generated the name of the MAG extrinsic tensors.";
 Gauss::usage="Gauss is a reserved word in xMAG.";
 Codazzi::usage="Codazzi is a reserved word in xMAG.";
@@ -334,7 +330,7 @@ of the distortion tensor to projected tensors.";
 ClearInducedConnectionRelations::usage="ClearInducedConnectionRelations[CD,h] removes the automatic rules relating Projector Inert Head 
 of distortion tensor to projected tensors.";
 DistortionDecomposition::usage="DistortionDecomposition[expr,CD] decomposes all occurences of the distortion tensor appearing in exp.";
-CurvatureDecomposition::usage="CurvatureDecomposition[expr,CD] decomposes all occurences of the Riemann Curvature tensor appearing in exp.";
+RiemannDecomposition::usage="RiemannDecomposition[expr,CD] decomposes all occurences of the Riemann Curvature tensor appearing in exp.";
 InducedProjectiveRelations::usage="InducedProjectiveRelations is a boolean options for StartInducedDecomposition giving wether automatic rules relating non projective invariant components
 of the distortion tensor to projective invariant tensors should be defined or not.\ 
 InducedProjectiveRelations[CD,h] gives the transformation rules from non projective invariant component of the distortion tensor to a projective 
@@ -343,11 +339,7 @@ SetInducedProjectiveRelations::usage="SetInducedCurvatureRelations[cd,h] sets th
 of the Riemann tensor to projected tensors.";
 ClearInducedProjectiveRelations::usage="ClearInducedCurvatureRelations[cd,h] removes the automatic rules relating Projector Inert Head 
 of curvature tensor to projected tensors.";
-
-
-(* ::Input::Initialization:: *)
-(*** Bimetric gravity ***)
-MetricOfTensor::usage="MetricOfTensor[tens] returns the natural metric associated to the tensor tens. For a tensor to be associated with a natural metric g one should set the option Master->g (or Master->covdg) at definition time of tensor.";
+ToInducedCurvature::usage="";
 
 
 (* ::Input::Initialization:: *)
@@ -355,36 +347,19 @@ Begin["`Private`"]
 
 
 (* ::Input::Initialization:: *)
-SafeCanonical[e_]:=ToCanonical[e, UseMetricOnVBundle -> None]
+(*SafeCanonical[e_]:=ToCanonical[e, UseMetricOnVBundle -> None]*)
 SafeToRule[exp_]:=ToRule[exp,MetricOn->None,ContractMetrics->False];
 SafeMakeRule[e_List]:=MakeRule[e,MetricOn->None,ContractMetrics->False]
 
 
 (* ::Input::Initialization:: *)
-Options[ToFunction]={Verbose->True};
-ToFunction[expr:(_Equal|_Rule|_RuleDelayed),Function_,options___]:=Module[{rule,verbose,optionstr},
-{verbose}=OptionValue[{ToFunction},{options},{Verbose}];
-optionstr=Options[ToRule];
-rule=ToRule[expr,optionstr];
+Options[ToFunction]={PatternIndices->All,TestIndices->True,MetricOn->None,UseSymmetries->True,Verbose->False,ContractMetrics->False,Evaluate->False}
+ToFunction[expr:(_Equal|_Rule|_RuleDelayed),Function_,options:OptionsPattern[]]:=Module[{rule,pi,ti,mo,us,vb,cm,ev},
+{pi,ti,mo,us,vb,cm,ev}=OptionValue[{PatternIndices,TestIndices,MetricOn,UseSymmetries,Verbose,ContractMetrics,Evaluate}];
+rule=ToRule[expr,PatternIndices->pi,TestIndices->ti,MetricOn->mo,UseSymmetries->us,Verbose->vb,ContractMetrics->cm,Evaluate->ev];
 Function[e_]:=e/.rule;
-If[verbose===True,
-Print["** Defining function  "<>ToString[Function]]]
+Print["** Defining function  "<>ToString[Function]]
 ]
-
-
-(* ::Input::Initialization:: *)
-LeviCivitaQ[covd_?CovDQ,metric_?MetricQ]:=Module[
-{ torsionQ=TorsionQ[covd],
-met=MetricOfCovD[covd],
-metricQ= MetricOfCovD[covd]=!= Null
-},
-If[!TorsionQ[covd]&&(metricQ),
-	If[ToString[met]==ToString[metric],True,False],False]]
-
-
-(* ::Input::Initialization:: *)
-LeviCivitaQ[covd_?CovDQ,_]:=False
-LeviCivitaQ[covd_?CovDQ]:=LeviCivitaQ[covd,MasterOf[covd]]
 
 
 (* ::Input::Initialization:: *)
@@ -430,24 +405,6 @@ ToRule[part2==part1,options]
 ]
 
 
-(* ::Input::Initialization:: *)
-TraceFreeQ[tensor_?xTensorQ,inds___List,metric_?MetricQ]:=Module[{mettraces,traces,tfQ},
-mettraces=Map[metric@@#&,ChangeIndex/@Subsets[inds,{2}]];
-traces=Map[ContractMetric[ToCanonical[tensor@@inds*#],metric]&,mettraces];
-If[AllTrue[traces,#===0&],tfQ=True,tfQ=False];
-tfQ
-];
-TraceFreeQ[tensor_,metric_?MetricQ]:=TraceFreeQ[Head@tensor,List@@tensor,metric];
-TraceFreeQ[tensor_]:=If[MasterOf[Head@tensor]=!={},TraceFreeQ[Head@tensor,List@@tensor,MetricOfTensor[Head@tensor]],TraceFreeQ[Head@tensor,List@@tensor,$Metrics[[1]]]];
-
-
-Unprotect[xAct`xTensor`DefCovD];
-If[FreeQ[Options[xAct`xTensor`DefCovD], DefMAGTensors], 
-	Options[xAct`xTensor`DefCovD] ^= Append[Options[xAct`xTensor`DefCovD], DefMAGTensors -> Null];
-, 
-	Null;
-];
-Protect[xAct`xTensor`DefCovD];
 Unprotect[xAct`xTensor`DefCovD];
 
 If[FreeQ[Options[xAct`xTensor`DefCovD],ConnectionRelations], 
@@ -465,9 +422,17 @@ If[FreeQ[Options[xAct`xTensor`DefCovD], GradMetricToNonMetricity],
 ];
 Protect[xAct`xTensor`DefCovD];
 
+Unprotect[xAct`xTensor`DefCovD];
+If[FreeQ[Options[xAct`xTensor`DefCovD],DefConnectionPerturbation], 
+	Options[xAct`xTensor`DefCovD] ^= Append[Options[xAct`xTensor`DefCovD], DefConnectionPerturbation-> True];
+, 
+	Null;
+];
+Protect[xAct`xTensor`DefCovD];
+
 
 (* ::Input::Initialization:: *)
-Set[CovDTensorQ[#],True]&/@{Distortion,DistortionTrace,TFDistortion,Disformation,DisformationTrace,TFDisformation,Contorsion,TFContorsion,NonMetricity,TFNonMetricity,WeylVector,WeylCoVector,TFTorsion,TorsionVector,CoRicci,TFCoRicci,Homothetic,Weyl,NRiemann,NWeyl,LinearVector};
+Set[CovDTensorQ[#],True]&/@{Distortion,DistortionTrace,TFDistortion,Disformation,DisformationTrace,TFDisformation,Contorsion,TFContorsion,NonMetricity,TFNonMetricity,NonMetricityTrace,TFTorsion,TorsionVector,CoRicci,TFCoRicci,Homothetic,Weyl,NRiemann,NWeyl,LinearVector};
 CovDTensorQ[_]=False;
 
 
@@ -476,8 +441,8 @@ Distortion[covd_]:=ToExpression[StringJoin[ToString[Distortion],ToString[covd]]]
 Disformation[covd_]:=ToExpression[StringJoin[ToString[Disformation],ToString[covd]]];
 Contorsion[covd_]:=ToExpression[StringJoin[ToString[Contorsion],ToString[covd]]];
 NonMetricity[covd_]:=ToExpression[StringJoin[ToString[NonMetricity],ToString[covd]]];
-WeylVector[covd_]:=ToExpression[StringJoin[ToString[WeylVector],ToString[covd]]];
-WeylCoVector[covd_]:=ToExpression[StringJoin[ToString[WeylCoVector],ToString[covd]]];
+(*WeylVector[covd_]:=ToExpression[StringJoin[ToString[WeylVector],ToString[covd]]];*)
+(*WeylCoVector[covd_]:=ToExpression[StringJoin[ToString[WeylCoVector],ToString[covd]]];*)
 TorsionVector[covd_]:=ToExpression[StringJoin[ToString[TorsionVector],ToString[covd]]];
 CoRicci[covd_]:=ToExpression[StringJoin[ToString[CoRicci],ToString[covd]]];
 Homothetic[covd_]:=ToExpression[StringJoin[ToString[Homothetic],ToString[covd]]];
@@ -496,9 +461,6 @@ PrintAsCharacter[CoRicci]="\!\(\*OverscriptBox[\(R\), \((2)\)]\)";
 PrintAsCharacter[Homothetic]="\!\(\*OverscriptBox[\(R\), \((3)\)]\)";
 PrintAsCharacter[TFRicci]="\!\(\*OverscriptBox[\(S\), \((1)\)]\)";
 PrintAsCharacter[TFCoRicci]="\!\(\*OverscriptBox[\(S\), \((2)\)]\)";
-(** Non Riemannian part of curvature tensors **)
-PrintAsCharacter[NRiemann]="N";
-PrintAsCharacter[NWeyl]="\!\(\*OverscriptBox[\(N\), \((W)\)]\)";
 (** Tensors related to the general connection **)
 PrintAsCharacter[Distortion]="C";
 PrintAsCharacter[DistortionTrace]="C";
@@ -510,8 +472,7 @@ PrintAsCharacter[Contorsion]="K";
 PrintAsCharacter[TFContorsion]="\!\(\*OverscriptBox[\(K\), \((tf)\)]\)";
 PrintAsCharacter[NonMetricity]="Q";
 PrintAsCharacter[TFNonMetricity]="\!\(\*OverscriptBox[\(Q\), \((tf)\)]\)";
-PrintAsCharacter[WeylVector]="Q";
-PrintAsCharacter[WeylCoVector]="\!\(\*OverscriptBox[\(Q\), \(~\)]\)";
+PrintAsCharacter[NonMetricityTrace]="Q";
 PrintAsCharacter[TFTorsion]="\!\(\*OverscriptBox[\(T\), \((tf)\)]\)";
 PrintAsCharacter[TorsionVector]="T";
 
@@ -526,8 +487,9 @@ xMAGxTensorTFRicci[covd_Symbol?CovDQ]:=GiveSymbol[TFRicci,covd];
 
 
 (* ::Input::Initialization:: *)
-DistortionTrace[covd_][comp_]:=ToExpression[StringJoin[ToString[DistortionTrace],ToString[covd],ToString[comp]]];
-DisformationTrace[covd_][comp_]:=ToExpression[StringJoin[ToString[DisformationTrace],ToString[covd],ToString[comp]]];
+DistortionTrace[comp_][covd_]:=ToExpression[StringJoin[ToString[DistortionTrace],ToString[comp],ToString[covd]]];
+DisformationTrace[comp_][covd_]:=ToExpression[StringJoin[ToString[DisformationTrace],ToString[comp],ToString[covd]]];
+NonMetricityTrace[comp_][covd_]:=ToExpression[StringJoin[ToString[NonMetricityTrace],ToString[comp],ToString[covd]]];
 
 
 (* ::Input::Initialization:: *)
@@ -599,17 +561,17 @@ cd/: ConnectionRelationsQ[cd]:=True;
 
 
 (* ::Input::Initialization:: *)
-ClearCurvatureRelations[cd_?CovDQ/;!NonMetricityQ[cd],xAct`xTras`Private`options___?OptionQ]:=(ClearAutomaticRules[Evaluate[GiveSymbol[Ricci,cd]],CurvatureRelations[cd,Ricci],xAct`xTras`Private`options];ClearAutomaticRules[Evaluate[GiveSymbol[Riemann,cd]],CurvatureRelations[cd,Riemann],xAct`xTras`Private`options];ClearAutomaticRules[Evaluate[GiveSymbol[SymRiemann,cd]],CurvatureRelations[cd,SymRiemann],xAct`xTras`Private`options];
+ClearCurvatureRelations[cd_?CovDQ/;!NonMetricityQ[cd],options___?OptionQ]:=(ClearAutomaticRules[Evaluate[GiveSymbol[Ricci,cd]],CurvatureRelations[cd,Ricci],options];ClearAutomaticRules[Evaluate[GiveSymbol[Riemann,cd]],CurvatureRelations[cd,Riemann],options];ClearAutomaticRules[Evaluate[GiveSymbol[SymRiemann,cd]],CurvatureRelations[cd,SymRiemann],options];
 CurvatureRelationsQ[cd]=False;);
-ClearCurvatureRelations[cd_?CovDQ/;NonMetricityQ[cd],xAct`xTras`Private`options___?OptionQ]:=(ClearAutomaticRules[Evaluate[GiveSymbol[Ricci,cd]],CurvatureRelations[cd,Ricci],xAct`xTras`Private`options];
-ClearAutomaticRules[Evaluate[GiveSymbol[CoRicci,cd]],CurvatureRelations[cd,CoRicci],xAct`xTras`Private`options];
-ClearAutomaticRules[Evaluate[GiveSymbol[Riemann,cd]],CurvatureRelations[cd,Riemann],xAct`xTras`Private`options];
+ClearCurvatureRelations[cd_?CovDQ/;NonMetricityQ[cd],options___?OptionQ]:=(ClearAutomaticRules[Evaluate[GiveSymbol[Ricci,cd]],CurvatureRelations[cd,Ricci],options];
+ClearAutomaticRules[Evaluate[GiveSymbol[CoRicci,cd]],CurvatureRelations[cd,CoRicci],options];
+ClearAutomaticRules[Evaluate[GiveSymbol[Riemann,cd]],CurvatureRelations[cd,Riemann],options];
 CurvatureRelationsQ[cd]=False;);
 
-SetCurvatureRelations[cd_?CovDQ/;!NonMetricityQ[cd],xAct`xTras`Private`options___?OptionQ]:=(AutomaticRules[Evaluate[GiveSymbol[Ricci,cd]],CurvatureRelations[cd,Ricci],xAct`xTras`Private`options];AutomaticRules[Evaluate[GiveSymbol[Riemann,cd]],CurvatureRelations[cd,Riemann],xAct`xTras`Private`options];AutomaticRules[Evaluate[GiveSymbol[SymRiemann,cd]],CurvatureRelations[cd,SymRiemann],xAct`xTras`Private`options];
+SetCurvatureRelations[cd_?CovDQ/;!NonMetricityQ[cd],options___?OptionQ]:=(AutomaticRules[Evaluate[GiveSymbol[Ricci,cd]],CurvatureRelations[cd,Ricci],options];AutomaticRules[Evaluate[GiveSymbol[Riemann,cd]],CurvatureRelations[cd,Riemann],options];AutomaticRules[Evaluate[GiveSymbol[SymRiemann,cd]],CurvatureRelations[cd,SymRiemann],options];
 CurvatureRelationsQ[cd]=True;);
-SetCurvatureRelations[cd_?CovDQ/;NonMetricityQ[cd],xAct`xTras`Private`options___?OptionQ]:=(AutomaticRules[Evaluate[GiveSymbol[Ricci,cd]],CurvatureRelations[cd,Ricci],xAct`xTras`Private`options];
-AutomaticRules[Evaluate[GiveSymbol[CoRicci,cd]],CurvatureRelations[cd,CoRicci],xAct`xTras`Private`options];AutomaticRules[Evaluate[GiveSymbol[Riemann,cd]],CurvatureRelations[cd,Riemann],xAct`xTras`Private`options];
+SetCurvatureRelations[cd_?CovDQ/;NonMetricityQ[cd],options___?OptionQ]:=(AutomaticRules[Evaluate[GiveSymbol[Ricci,cd]],CurvatureRelations[cd,Ricci],options];
+AutomaticRules[Evaluate[GiveSymbol[CoRicci,cd]],CurvatureRelations[cd,CoRicci],options];AutomaticRules[Evaluate[GiveSymbol[Riemann,cd]],CurvatureRelations[cd,Riemann],options];
 CurvatureRelationsQ[cd]=True;);
 
 
@@ -642,26 +604,32 @@ AutomaticRules[metric,GradMetricToNonMetricityRule[covd,metric]]
 ]
 
 
-MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
-	{cd=CovDOfMetric[metric],vb=VBundleOfMetric[metric],M=BaseOfVBundle@VBundleOfMetric[metric],indices = GetIndicesOfVBundle[VBundleOfMetric[metric], 8],
-	metricQ= (FromMetric/. CheckOptions[options] /. Options[DefCovD]) =!= Null,magtdQ= (DefMAGTensors/. CheckOptions[options] /. Options[DefCovD]) =!= Null,
+(* ::Input::Initialization:: *)
+xTension["xMAG`xTras`",DefCovD,"End"]:=xMAGDefCovD;
+
+
+xMAGDefCovD[covd_[ind_],vbundles_,options___?OptionQ]:=With[
+	{vb=VBundleOfIndex[ind],M=BaseOfVBundle@VBundleOfIndex[ind],indices = GetIndicesOfVBundle[VBundleOfIndex[ind], 8],
+	metricQ= (FromMetric/. CheckOptions[options] /. Options[DefCovD]) =!= Null,mocQ= (Master/. CheckOptions[options] /. Options[DefCovD]) =!= Null,
 	torsionQ= Torsion/. CheckOptions[options] /. Options[DefCovD],definfo= DefInfo /. CheckOptions[options] /. Options[DefCovD],
 	curvrels= CurvatureRelations/. CheckOptions[options] /. Options[DefCovD],
 	connectionrels= ConnectionRelations /. CheckOptions[options] /. Options[DefCovD],autoNMQ=OptionValue[DefCovD,{options},GradMetricToNonMetricity],
 	pw=ProjectedWith/. CheckOptions[options] /. Options[DefCovD],
-	ov=OrthogonalTo/. CheckOptions[options] /. Options[DefCovD]
+	ov=OrthogonalTo/. CheckOptions[options] /. Options[DefCovD],
+	dcpQ=DefConnectionPerturbation/. CheckOptions[options] /. Options[DefCovD]
 	},
-	With[{dimM=DimOfManifold[M],imetric=Inv[metric],info= If[definfo =!= False, $DefInfoQ, False],
+	With[{dimM=DimOfManifold[M],info= If[definfo =!= False, $DefInfoQ, False],
 			projectedQ=(pw=!={}),orthogonalQ=(ov=!={}),riemann=GiveSymbol[Riemann,covd],
 			weylmag=GiveSymbol[Weyl,covd],Nriemann=GiveSymbol[NRiemann,covd],
 			Nweylmag=GiveSymbol[NWeyl,covd],homothetic=GiveSymbol[Homothetic,covd],coricci=GiveSymbol[CoRicci,covd],tfcoricci=GiveSymbol[TFCoRicci,covd],
-			tfricci=GiveSymbol[TFRicci,covd],ricci=GiveSymbol[Ricci,covd],ricciscalar=GiveSymbol[RicciScalar,covd],distortion= GiveSymbol[Distortion,covd],
-			tfdistortion=GiveSymbol[TFDistortion,covd],distortiont1=GiveSymbol[DistortionTrace,covd,1],distortiont2=GiveSymbol[DistortionTrace,covd,2],
-			distortiont3=GiveSymbol[DistortionTrace,covd,3],tfnonmetricity=GiveSymbol[TFNonMetricity,covd],tftorsion=GiveSymbol[TFTorsion,covd],
+			tfricci=GiveSymbol[TFRicci,covd],ricci=GiveSymbol[Ricci,covd],einstein=GiveSymbol[Einstein,covd],ricciscalar=GiveSymbol[RicciScalar,covd],distortion= GiveSymbol[Distortion,covd],
+			tfdistortion=GiveSymbol[TFDistortion,covd],distortiont1=GiveSymbol[DistortionTrace,1,covd],distortiont2=GiveSymbol[DistortionTrace,2,covd],
+			distortiont3=GiveSymbol[DistortionTrace,3,covd],tfnonmetricity=GiveSymbol[TFNonMetricity,covd],tftorsion=GiveSymbol[TFTorsion,covd],
 			disformation= GiveSymbol[Disformation,covd],tfdisformation= GiveSymbol[TFDisformation,covd],
-			disformation1=GiveSymbol[DisformationTrace,covd,1],disformation2=GiveSymbol[DisformationTrace,covd,2],contorsion=GiveSymbol[Contorsion,covd],
+			disformation1=GiveSymbol[DisformationTrace,1,covd],disformation2=GiveSymbol[DisformationTrace,2,covd],contorsion=GiveSymbol[Contorsion,covd],
 			tfcontorsion= GiveSymbol[TFContorsion,covd],nonmetricity=GiveSymbol[NonMetricity,covd],
-			torsion=GiveSymbol[Torsion,covd],torsionvec=GiveSymbol[TorsionVector,covd],weylvec=GiveSymbol[WeylVector,covd],coweylvec= GiveSymbol[WeylCoVector,covd],
+			torsion=GiveSymbol[Torsion,covd],torsionvec=GiveSymbol[TorsionVector,covd],weylvec=GiveSymbol[NonMetricityTrace,1,covd],tracenonmetricity2= GiveSymbol[NonMetricityTrace,2,covd],
+			christoffel=GiveSymbol[Christoffel,covd],pertchristoffel=GiveSymbol[Perturbation,Christoffel,covd],
 			a= indices[[1]],
 			b= indices[[2]],
 			c= indices[[3]],
@@ -671,10 +639,11 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 			c1= indices[[7]],
 			d1= indices[[8]]
 			},
-		Module[{nv,projector},
-	If[magtdQ,
-		(*** We set MasterOf the covariant derivative to the metric associated to the non metricity tensor ***)
-		MasterOf[covd]^=DefMAGTensors/.CheckOptions[options]/. Options[DefCovD];
+		Module[{nv,projector,cd,imetric,integerdimQ},With[{metric=Master/. CheckOptions[options] /. Options[DefCovD]},
+	If[mocQ&&(!metricQ||torsionQ),
+		imetric=Inv[metric];
+		cd=CovDOfMetric[metric];
+		integerdimQ=IntegerQ[dimM];
 		(* orthogonality and projections *)
 		If[orthogonalQ,nv=ov[[1,0]]];
 		If[projectedQ,projector=pw[[1,0]]];
@@ -694,8 +663,14 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 		(**** RicciScalar *****)
 		DefTensor[ricciscalar[],M, PrintAs -> GiveOutputString[RicciScalar,covd],
 						Master-> covd, DefInfo -> If[info, {"Ricci scalar",""}, False],TensorID->{RicciScalar,covd}];
+		(*** Einstein tensor ****)
+		DefTensor[einstein[-a,-b],M,PrintAs -> GiveOutputString[Einstein,covd],
+						Master-> covd,
+						OrthogonalTo:>If[orthogonalQ,{nv[a],nv[b]},{}],
+						ProjectedWith:>If[projectedQ,{projector[a,-a1],projector[b,-b1]},{}],
+						DefInfo -> If[info, {"Einstein tensor",""}, False],TensorID->{Einstein,covd}]					
 		];
-						
+					
 (***************************************************************************************************************)	
 (************************* When the connection has torsion and nonmetricity ************************************)
 (***************************************************************************************************************)	
@@ -773,51 +748,59 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 						OrthogonalTo:>If[orthogonalQ,{nv[a],nv[b],nv[c]},{}],
 						ProjectedWith:>If[projectedQ,{projector[a,-a1],projector[b,-b1],projector[c,-c1]},{}],
 						DefInfo -> If[info, {"trace free part of the NonMetricity tensor",""}, False],TensorID->{TFNonMetricity,covd}];
-		DefTensor[weylvec[a],M,PrintAs -> GiveOutputString[WeylVector,covd],
+		DefTensor[weylvec[a],M,PrintAs -> "Q",
 						Master-> covd,
 						OrthogonalTo:>If[orthogonalQ,{nv[-a]},{}],
 							ProjectedWith:>If[projectedQ,{projector[-a,a1]},{}],
-						DefInfo -> If[info, {"Weyl vector",""}, False],TensorID->{WeylVector,covd}];	
-		DefTensor[coweylvec[-a],M,PrintAs -> GiveOutputString[WeylCoVector,covd],
+						DefInfo -> If[info, {"Weyl vector",""}, False],TensorID->{NonMetricityTrace,covd}];	
+		DefTensor[tracenonmetricity2[-a],M,PrintAs -> "\!\(\*OverscriptBox[\(Q\), \(~\)]\)",
 						Master-> covd,
 						OrthogonalTo:>If[orthogonalQ,{nv[a]},{}],
 						ProjectedWith:>If[projectedQ,{projector[a,-a1]},{}],
-						DefInfo -> If[info, {"Weyl co-vector",""}, False],TensorID->{WeylCoVector,covd}];									
+						DefInfo -> If[info, {"Second trace of non-metricity",""}, False],TensorID->{NonMetricityTrace,covd}];									
 		(**********************************************)	
 		(************** TraceFree rules ***************)
 		(**********************************************)
 		If[!FrozenMetricQ[metric],
-		CoRicciToTFCoRicciRules[covd]=ToRule[coricci[a,-b]==tfcoricci[a,-b]+ToTraceTensor[coricci[a,-b],1,metric]];
-		TFCoRicciToCoRicciRules[covd]=ToRule[tfcoricci[a,-b]==ToTracelessTensor[coricci[a,-b],1,metric]];
-		RicciToTFRicciRules[covd]=ToRule[ricci[-a,-b]==tfricci[-a,-b]+ToTraceTensor[ricci[-a,-b],1,metric]];
-		TFRicciToRicciRules[covd]=ToRule[tfricci[-a,-b]==ToTracelessTensor[ricci[-a,-b],1,metric]];
-		TFDistortionToDistortionRules[covd]=ToRule[tfdistortion[a,-b,-c]==(ToTracelessTensor[distortion[a,-b,-c],1,metric])];
-		DistortionToTFDistortionRules[covd]=ToRule[distortion[a,-b,-c]==(tfdistortion[a,-b,-c]+ToTraceTensor[distortion[a,-b,-c],1,metric])];
-		TFNonMetricityToNonMetricityRules[covd]=ToRule[tfnonmetricity[a,-b,-c]==(ToTracelessTensor[nonmetricity[a,-b,-c],1,metric])];
-		NonMetricityToTFNonMetricityRules[covd]=ToRule[nonmetricity[a,-b,-c]==(tfnonmetricity[a,-b,-c]+ToTraceTensor[nonmetricity[a,-b,-c],1,metric])];
-		TFTorsionToTorsionRules[covd]=ToRule[tftorsion[a,-b,-c]==(ToTracelessTensor[torsion[a,-b,-c],1,metric])];
-		TorsionToTFTorsionRules[covd]=ToRule[torsion[a,-b,-c]==(tftorsion[a,-b,-c]+ToTraceTensor[torsion[a,-b,-c],1,metric])],
+		CoRicciToTFCoRicciRules[covd]=ToRule[coricci[a,-b]==tfcoricci[a,-b]+TraceProject[coricci[a,-b],metric]];
+		TFCoRicciToCoRicciRules[covd]=ToRule[tfcoricci[a,-b]==TracelessProject[coricci[a,-b],1,metric]];
+		RicciToTFRicciRules[covd]=ToRule[ricci[-a,-b]==tfricci[-a,-b]+TraceProject[ricci[-a,-b],metric]];
+		TFRicciToRicciRules[covd]=ToRule[tfricci[-a,-b]==TracelessProject[ricci[-a,-b],1,metric]];
+		TFDistortionToDistortionRules[covd]=ToRule[tfdistortion[a,-b,-c]==(TracelessProject[distortion[a,-b,-c],1,metric])];
+		DistortionToTFDistortionRules[covd]=ToRule[distortion[a,-b,-c]==(tfdistortion[a,-b,-c]+TraceProject[distortion[a,-b,-c],metric])];
+		TFNonMetricityToNonMetricityRules[covd]=ToRule[tfnonmetricity[a,-b,-c]==(TracelessProject[nonmetricity[a,-b,-c],1,metric])];
+		NonMetricityToTFNonMetricityRules[covd]=ToRule[nonmetricity[a,-b,-c]==(tfnonmetricity[a,-b,-c]+TraceProject[nonmetricity[a,-b,-c],metric])];
+		TFTorsionToTorsionRules[covd]=ToRule[tftorsion[a,-b,-c]==(TracelessProject[torsion[a,-b,-c],1,metric])];
+		TorsionToTFTorsionRules[covd]=ToRule[torsion[a,-b,-c]==(tftorsion[a,-b,-c]+TraceProject[torsion[a,-b,-c],metric])],
 		(**Frozen metric**)
-		CoRicciToTFCoRicciRules[covd]=SafeToRule[coricci[a,-b]==tfcoricci[a,-b]+ToTraceTensor[coricci[a,-b],1,metric]];
-		TFCoRicciToCoRicciRules[covd]=SafeToRule[tfcoricci[a,-b]==ToTracelessTensor[coricci[a,-b],1,metric]];
-		RicciToTFRicciRules[covd]=SafeToRule[ricci[-a,-b]==tfricci[-a,-b]+ToTraceTensor[ricci[-a,-b],1,metric]];
-		TFRicciToRicciRules[covd]=SafeToRule[tfricci[-a,-b]==ToTracelessTensor[ricci[-a,-b],1,metric]];
-		TFDistortionToDistortionRules[covd]=SafeToRule[tfdistortion[a,-b,-c]==(ToTracelessTensor[distortion[a,-b,-c],1,metric])];
-		DistortionToTFDistortionRules[covd]=SafeToRule[distortion[a,-b,-c]==(tfdistortion[a,-b,-c]+ToTraceTensor[distortion[a,-b,-c],1,metric])];
-		TFNonMetricityToNonMetricityRules[covd]=SafeToRule[tfnonmetricity[a,-b,-c]==(ToTracelessTensor[nonmetricity[a,-b,-c],1,metric])];
-		NonMetricityToTFNonMetricityRules[covd]=SafeToRule[nonmetricity[a,-b,-c]==(tfnonmetricity[a,-b,-c]+ToTraceTensor[nonmetricity[a,-b,-c],1,metric])];
-		TFTorsionToTorsionRules[covd]=SafeToRule[tftorsion[a,-b,-c]==(ToTracelessTensor[torsion[a,-b,-c],1,metric])];
-		TorsionToTFTorsionRules[covd]=SafeToRule[torsion[a,-b,-c]==(tftorsion[a,-b,-c]+ToTraceTensor[torsion[a,-b,-c],1,metric])]];
-			
+		CoRicciToTFCoRicciRules[covd]=SafeToRule[coricci[a,-b]==tfcoricci[a,-b]+TraceProject[coricci[a,-b],metric]];
+		TFCoRicciToCoRicciRules[covd]=SafeToRule[tfcoricci[a,-b]==TracelessProject[coricci[a,-b],1,metric]];
+		RicciToTFRicciRules[covd]=SafeToRule[ricci[-a,-b]==tfricci[-a,-b]+TraceProject[ricci[-a,-b],metric]];
+		TFRicciToRicciRules[covd]=SafeToRule[tfricci[-a,-b]==TracelessProject[ricci[-a,-b],1,metric]];
+		TFDistortionToDistortionRules[covd]=SafeToRule[tfdistortion[a,-b,-c]==(TracelessProject[distortion[a,-b,-c],1,metric])];
+		DistortionToTFDistortionRules[covd]=SafeToRule[distortion[a,-b,-c]==(tfdistortion[a,-b,-c]+TraceProject[distortion[a,-b,-c],metric])];
+		TFNonMetricityToNonMetricityRules[covd]=SafeToRule[tfnonmetricity[a,-b,-c]==(TracelessProject[nonmetricity[a,-b,-c],1,metric])];
+		NonMetricityToTFNonMetricityRules[covd]=SafeToRule[nonmetricity[a,-b,-c]==(tfnonmetricity[a,-b,-c]+TraceProject[nonmetricity[a,-b,-c],metric])];
+		TFTorsionToTorsionRules[covd]=SafeToRule[tftorsion[a,-b,-c]==(TracelessProject[torsion[a,-b,-c],1,metric])];
+		TorsionToTFTorsionRules[covd]=SafeToRule[torsion[a,-b,-c]==(tftorsion[a,-b,-c]+TraceProject[torsion[a,-b,-c],metric])]];
+		(*************************************************************************************************************)	
+		(*********** Ricci versus Einstein : we take the convention of Aoki/Shimada : arXiv: 1904.10175v1 ************)
+		(*************************************************************************************************************)
+		(**** For dim=2, it is not clear for me what to do ***)
+		RicciToEinsteinRules[covd]=
+		If[If[integerdimQ,dimM>1,True],
+		If[info,Print["** DefCovD:  Computing RicciToEinsteinRules for dim ",dimM]];
+		MakeRule[{ricci[-a,-b],2*einstein[-a,-b]-coricci[-a,-b]+metric[-a,-b]ricciscalar[]},MetricOn->All,TestIndices->False,ContractMetrics->True],{}];
+		EinsteinToRicciRules[covd]=If[If[integerdimQ,dimM>=3,True],MakeRule[{einstein[-a,-b],(ricci[-a,-b]+coricci[-a,-b]-metric[-a,-b]*ricciscalar[])/2}],{}];
 		(***********************************************)	
 		(*********** Connection relations **************)
 		(***********************************************)
 		If[!FrozenMetricQ[metric],
 		ConnectionRelations[covd,Distortion]=Join[MakeRule[{distortion[b,-a,a],distortiont1[b]}],MakeRule[{distortion[a,-b,-a],distortiont2[-b]}],MakeRule[{distortion[a,-a,-b],distortiont3[-b]}]];
-		ConnectionRelations[covd,NonMetricity]=Join[MakeRule[{nonmetricity[a,-b,-a],coweylvec[-b]}],MakeRule[{nonmetricity[b,a,-a],weylvec[b]}]];
+		ConnectionRelations[covd,NonMetricity]=Join[MakeRule[{nonmetricity[a,-b,-a],tracenonmetricity2[-b]}],MakeRule[{nonmetricity[b,a,-a],weylvec[b]}]];
 		ConnectionRelations[covd,Torsion]=MakeRule[{torsion[a, -b,-a],torsionvec[-b]}],
 		ConnectionRelations[covd,Distortion]=Join[SafeMakeRule[{distortion[b,-a,a],distortiont1[b]}],SafeMakeRule[{distortion[a,-b,-a],distortiont2[-b]}],SafeMakeRule[{distortion[a,-a,-b],distortiont3[-b]}]];
-		ConnectionRelations[covd,NonMetricity]=Join[SafeMakeRule[{nonmetricity[a, -b ,-a ],coweylvec[-b]}],SafeMakeRule[{nonmetricity[b,a,-a],weylvec[b]}]];
+		ConnectionRelations[covd,NonMetricity]=Join[SafeMakeRule[{nonmetricity[a, -b ,-a ],tracenonmetricity2[-b]}],SafeMakeRule[{nonmetricity[b,a,-a],weylvec[b]}]];
 		ConnectionRelations[covd,Torsion]=SafeMakeRule[{torsion[a, -b,-a],torsionvec[-b]}]];
 		If[connectionrels,
 		If[info,Print["** DefCovD:  Contractions of Distortion, Torsion, and Nonmetritcity automatically replaced by correcponding vectors."]];
@@ -839,8 +822,8 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 			Unprotect[CurvatureRelations];
 			ClearAutomaticRules[riemann,CurvatureRelations[covd,Riemann],Verbose->False];
 			covd/:CurvatureRelations[covd,Riemann]=.;
-			covd/:CurvatureRelations[covd,Riemann]=Join[MakeRule[{riemann[-a,-b,-c,b],$RicciSign ricci[-a,-c]}],MakeRule[{riemann[-c, -b, c, a],coricci[a, -b]}],
-			MakeRule[{riemann[-c, -b, -a, a],homothetic[-b, -c]}]];
+			covd/:CurvatureRelations[covd,Riemann]=Join[MakeRule[{riemann[-a,-b,-c,b],$RicciSign ricci[-a,-c]}],MakeRule[{riemann[-a,-c, c, b],-$RicciSign*coricci[-a, b]}],
+			MakeRule[{riemann[-b, -c, -a, a],$RiemannSign*homothetic[-c, -b]}]];
 			covd/:CurvatureRelations[covd,Ricci]=Join[CurvatureRelations[covd,Ricci],MakeRule[{ricci[-a,a],ricciscalar[]}]];
 			covd/:CurvatureRelations[covd,CoRicci]=MakeRule[{coricci[d,-d],ricciscalar[]}];
 			CurvatureRelations[covd]:=Join[CurvatureRelations[covd,Riemann],CurvatureRelations[covd,Ricci],CurvatureRelations[covd,CoRicci]];
@@ -850,8 +833,8 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 			ClearAutomaticRules[riemann,CurvatureRelations[covd,Riemann]]];
 			covd/:CurvatureRelations[covd,Riemann]=.;
 			covd/:CurvatureRelations[covd,Riemann]=Join[SafeMakeRule[{riemann[-a,-b,-c,b],$RicciSign ricci[-a,-c]}],
-			SafeMakeRule[{riemann[-c, -b, -a, a],homothetic[-b, -c]}],
-			SafeMakeRule[{imetric[d,c]*riemann[-c, -b, -d, a],coricci[a, -b]}]];
+			SafeMakeRule[{riemann[-c, -b, -a, a],$RiemannSign*homothetic[-b, -c]}],
+			SafeMakeRule[{imetric[d,c]*riemann[-b, -c, -d, a],-$RicciSign*coricci[-b,a]}]];
 			covd/:CurvatureRelations[covd,Ricci]=SafeMakeRule[{imetric[a,b]*ricci[-a,-b],ricciscalar[]}];
 			covd/:CurvatureRelations[covd,CoRicci]=SafeMakeRule[{coricci[d,-d],ricciscalar[]}];
 			CurvatureRelations[covd]:=Join[CurvatureRelations[covd,Riemann],CurvatureRelations[covd,Ricci],CurvatureRelations[covd,CoRicci]];
@@ -888,7 +871,10 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 						Master-> covd,
 						OrthogonalTo:>If[orthogonalQ,{nv[a],nv[b]},{}],
 						ProjectedWith:>If[projectedQ,{projector[a,-a1],projector[b,-b1]},{}],
-						 DefInfo -> If[info, {"Homothetic tensor",""}, False],TensorID->{Homothetic,covd}];						
+						 DefInfo -> If[info, {"Homothetic tensor",""}, False],TensorID->{Homothetic,covd}];
+		homothetic/:homothetic[a_Symbol,-a_Symbol]:=0;
+		homothetic/:homothetic[-a_Symbol,a_Symbol]:=0;
+		
 		(***********************************************)	
 		(************** Connection tensors *************)
 		(***********************************************)
@@ -897,7 +883,7 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 						OrthogonalTo:>If[orthogonalQ,{nv[-a],nv[b],nv[c]},{}],
 						ProjectedWith:>If[projectedQ,{projector[-a,a1],projector[b,-b1],projector[c,-c1]},{}],
 						DefInfo -> If[info, {"symmetric disformation tensor",""}, False],TensorID->{Disformation,covd}];
-		DefTensor[tfdisformation[a,-b,-c],M,Symmetric[{2,3}],DependenciesOfCovD[covd],TraceFree->{a,-b,-c},
+		DefTensor[tfdisformation[a,-b,-c],M,Symmetric[{2,3}],TraceFree->{a,-b,-c},
 							PrintAs:>GiveOutputString[TFDisformation,covd],Master->covd,
 							OrthogonalTo:>If[orthogonalQ,{nv[-a],nv[b],nv[c]},{}],
 							ProjectedWith:>If[projectedQ,{projector[-a,a1],projector[b,-b1],projector[c,-c1]},{}],
@@ -920,41 +906,49 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 						OrthogonalTo:>If[orthogonalQ,{nv[a],nv[b],nv[c]},{}],
 						ProjectedWith:>If[projectedQ,{projector[a,-a1],projector[b,-b1],projector[c,-c1]},{}],
 						DefInfo -> If[info, {"trace free part of the NonMetricity tensor",""}, False],TensorID->{TFNonMetricity,covd}];
-		DefTensor[weylvec[a],M,PrintAs -> GiveOutputString[WeylVector,covd],
+		DefTensor[weylvec[a],M,PrintAs -> GiveOutputString[NonMetricityTrace1,covd],
 						Master-> covd,
 						OrthogonalTo:>If[orthogonalQ,{nv[-a]},{}],
 							ProjectedWith:>If[projectedQ,{projector[-a,a1]},{}],
-						DefInfo -> If[info, {"Weyl vector",""}, False],TensorID->{WeylVector,covd}];	
-		DefTensor[coweylvec[-a],M,PrintAs -> GiveOutputString[WeylCoVector,covd],
+						DefInfo -> If[info, {"Weyl vector",""}, False],TensorID->{NonMetricityTrace,covd}];	
+		DefTensor[tracenonmetricity2[-a],M,PrintAs -> GiveOutputString[NonMetricityTrace2,covd],
 						Master-> covd,
 						OrthogonalTo:>If[orthogonalQ,{nv[a]},{}],
 						ProjectedWith:>If[projectedQ,{projector[a,-a1]},{}],
-						DefInfo -> If[info, {"Weyl co-vector",""}, False],TensorID->{WeylCoVector,covd}];		
+						DefInfo -> If[info, {"Second trace of non-metricity",""}, False],TensorID->{NonMetricityTrace,covd}];		
 		(**********************************************)	
 		(************** TraceFree rules ***************)
 		(**********************************************)
-		CoRicciToTFCoRicciRules[covd]=ToRule[coricci[a,-b]==tfcoricci[a,-b]+ToTraceTensor[coricci[a,-b],1,metric]];
-		TFCoRicciToCoRicciRules[covd]=ToRule[tfcoricci[a,-b]==ToTracelessTensor[coricci[a,-b],1,metric]];
-		RicciToTFRicciRules[covd]=ToRule[ricci[-a,-b]==tfricci[-a,-b]+ToTraceTensor[ricci[-a,-b],1,metric]];
-		TFRicciToRicciRules[covd]=ToRule[tfricci[-a,-b]==ToTracelessTensor[ricci[-a,-b],1,metric]];
-		TFDisformationToDisformationRules[covd]=ToRule[tfdisformation[a,-b,-c]==(ToTracelessTensor[disformation[a,-b,-c],1,metric])];
-		DisformationToTFDisformationRules[covd]=ToRule[disformation[a,-b,-c]==(tfdisformation[a,-b,-c]+ToTraceTensor[disformation[a,-b,-c],1,metric])];
-		TFNonMetricityToNonMetricityRules[covd]=ToRule[tfnonmetricity[a,-b,-c]==(ToTracelessTensor[nonmetricity[a,-b,-c],1,metric])];
-		NonMetricityToTFNonMetricityRules[covd]=ToRule[nonmetricity[a,-b,-c]==(tfnonmetricity[a,-b,-c]+ToTraceTensor[nonmetricity[a,-b,-c],1,metric])];		
+		CoRicciToTFCoRicciRules[covd]=ToRule[coricci[a,-b]==tfcoricci[a,-b]+TraceProject[coricci[a,-b],metric]];
+		TFCoRicciToCoRicciRules[covd]=ToRule[tfcoricci[a,-b]==TracelessProject[coricci[a,-b],1,metric]];
+		RicciToTFRicciRules[covd]=ToRule[ricci[-a,-b]==tfricci[-a,-b]+TraceProject[ricci[-a,-b],metric]];
+		TFRicciToRicciRules[covd]=ToRule[tfricci[-a,-b]==TracelessProject[ricci[-a,-b],1,metric]];
+		TFDisformationToDisformationRules[covd]=ToRule[tfdisformation[a,-b,-c]==(TracelessProject[disformation[a,-b,-c],1,metric])];
+		DisformationToTFDisformationRules[covd]=ToRule[disformation[a,-b,-c]==(tfdisformation[a,-b,-c]+TraceProject[disformation[a,-b,-c],metric])];
+		TFNonMetricityToNonMetricityRules[covd]=ToRule[tfnonmetricity[a,-b,-c]==(TracelessProject[nonmetricity[a,-b,-c],1,metric])];
+		NonMetricityToTFNonMetricityRules[covd]=ToRule[nonmetricity[a,-b,-c]==(tfnonmetricity[a,-b,-c]+TraceProject[nonmetricity[a,-b,-c],metric])];
+		(*************************************************************************************************************)	
+		(*********** Ricci versus Einstein : we take the convention of Aoki/Shimada : arXiv: 1904.10175v1 ************)
+		(*************************************************************************************************************)
+		RicciToEinsteinRules[covd]=
+		If[If[integerdimQ,dimM>1,True],
+		If[info,Print["** DefCovD:  Computing RicciToEinsteinRules for dim ",dimM]];
+		MakeRule[{ricci[-a,-b],2*einstein[-a,-b]-coricci[-a,-b]+metric[-a,-b]ricciscalar[]},MetricOn->All,TestIndices->False,ContractMetrics->True],{}];
+		EinsteinToRicciRules[covd]=If[If[integerdimQ,dimM>=3,True],MakeRule[{einstein[-a,-b],(ricci[-a,-b]+coricci[-a,-b]-metric[-a,-b]*ricciscalar[])/2}],{}];	
 		(***********************************************)	
 		(*********** Connection relations **************)
 		(***********************************************)
 		ConnectionRelations[covd,Distortion]=Join[MakeRule[{disformation[b,-a,a],disformation1[b]}],MakeRule[{disformation[a,-b,-a],disformation2[-b]}]];
-		ConnectionRelations[covd,NonMetricity]=Join[MakeRule[{nonmetricity[a, -b ,-a ],coweylvec[-b]}],MakeRule[{nonmetricity[b,a,-a],weylvec[b]}]];
+		ConnectionRelations[covd,NonMetricity]=Join[MakeRule[{nonmetricity[a, -b ,-a],tracenonmetricity2[-b]}],MakeRule[{nonmetricity[b,a,-a],weylvec[b]}]];
 		If[connectionrels,
-		If[info,Print["** DefCovD:  Contractions of Distortion, Torsion, and Nonmetritcity automatically replaced by correcponding vectors."]];
+		If[info,Print["** DefCovD:  Contractions of Distortion, Torsion, and Nonmetritcity automatically replaced by corresponding vectors."]];
 			covd/: ConnectionRelationsQ[covd]:=True;
 			AutomaticRules[disformation,ConnectionRelations[covd,Distortion],Verbose->False];
 			AutomaticRules[nonmetricity,ConnectionRelations[covd,NonMetricity],Verbose->False]
 			,covd/:ConnectionRelationsQ[covd]:=False];
 			
 		(** Automatic Conversion of grad metric to nonmetricity **)
-		GradMetricToNonMetricity[covd]=MakeRule[{covd[-a][metric[-b,-c]],nonmetricity[-a,-b,-c],MetricOn->{a}}];
+		GradMetricToNonMetricity[covd]=MakeRule[{covd[-a][metric[-b,-c]],nonmetricity[-a,-b,-c]},MetricOn->{a}];
 		If[autoNMQ,
 			SetGradMetricToNonMetricity[covd],
 			covd/:GradMetricToNonMetricityQ[covd]:=False;
@@ -962,29 +956,35 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 		(************************************************************************************)	
 		(****************************** Curvature relations *********************************)
 		(************************************************************************************)
+		covd/:CurvatureRelations[covd,Riemann]=Join[MakeRule[{riemann[-a,-b,-c,b],$RicciSign ricci[-a,-c]}],MakeRule[{riemann[-a,-c, c, b],-$RicciSign*coricci[-a, b]}],
+			MakeRule[{riemann[-c, -b, -a, a],$RiemannSign*homothetic[-b, -c]}]];
 		If[!FrozenMetricQ[metric],
 			Unprotect[CurvatureRelations];	
-			covd/:CurvatureRelations[covd,Riemann]=Join[CurvatureRelations[covd,Riemann],MakeRule[{riemann[-c, -b, -a, a],homothetic[-b, -c]}]];
+			covd/:CurvatureRelations[covd,Riemann]=Join[CurvatureRelations[covd,Riemann],MakeRule[{riemann[-c, -b, -a, a],$RiemannSign*homothetic[-b, -c]}]];
 			covd/:CurvatureRelations[covd,Ricci]=Join[CurvatureRelations[covd,Ricci],MakeRule[{ricci[-a,a],ricciscalar[]}]];
-			covd/:CurvatureRelations[covd,Riemann]=DeleteDuplicates@Join[CurvatureRelations[covd,Riemann],MakeRule[{riemann[-c, -b, c, a],coricci[a, -b]}]];
+			covd/:CurvatureRelations[covd,Riemann]=DeleteDuplicates@Join[CurvatureRelations[covd,Riemann],MakeRule[{riemann[-a, -c, c, b],-$RicciSign*coricci[-a, b]}]];
 			covd/:CurvatureRelations[covd,CoRicci]=MakeRule[{coricci[d,-d],ricciscalar[]}];
-			CurvatureRelations[covd]:=Join[CurvatureRelations[covd,Riemann],CurvatureRelations[covd,Ricci],CurvatureRelations[covd,CoRicci]];
+			(************ From trace of Bianchi identity ****)
+			covd/:CurvatureRelations[covd,Homothetic]=MakeRule[{homothetic[-a,-b],Evaluate[$RiemannSign*-2*Antisymmetrize[ricci[-a,-b],{-a,-b}]]}];
+			(*covd/:CurvatureRelations[covd,Homothetic]={};*)
+			CurvatureRelations[covd]:=Join[CurvatureRelations[covd,Riemann],CurvatureRelations[covd,Ricci],CurvatureRelations[covd,Homothetic],CurvatureRelations[covd,CoRicci]];
 			Protect[CurvatureRelations],
 			Unprotect[CurvatureRelations];
-			If[curvrels,
-			ClearAutomaticRules[riemann,CurvatureRelations[covd,Riemann]]];	
+			If[curvrels,ClearAutomaticRules[riemann,CurvatureRelations[covd,Riemann]]];	
 			covd/:CurvatureRelations[covd,Riemann]=.;
 			covd/:CurvatureRelations[covd,Riemann]=Join[SafeMakeRule[{riemann[-a,-b,-c,b],$RicciSign ricci[-a,-c]}],
-			SafeMakeRule[{imetric[d,c]riemann[-c, -b, -d, a],coricci[a, -b]},SafeMakeRule[{riemann[-c, -b, -a, a],homothetic[-b, -c]}]]];
+			SafeMakeRule[{imetric[d,c]riemann[-b,-c, -d, a],-$RicciSign*coricci[-b,a]},SafeMakeRule[{riemann[-c, -b, -a, a],$RiemannSign*homothetic[-b, -c]}]]];
 			covd/:CurvatureRelations[covd,Ricci]=.;
 			covd/:CurvatureRelations[covd,Ricci]=SafeMakeRule[{imetric[a,b]*ricci[-a,-b],ricciscalar[]}];
 			covd/:CurvatureRelations[covd,CoRicci]=MakeRule[{coricci[d,-d],ricciscalar[]}];
-			CurvatureRelations[covd]:=Join[CurvatureRelations[covd,Riemann],CurvatureRelations[covd,Ricci],CurvatureRelations[covd,CoRicci]];
+			covd/:CurvatureRelations[covd,Homothetic]=MakeRule[{homothetic[-a,-b],Evaluate[-2*Antisymmetrize[ricci[-a,-b],{-a,-b}]]}];
+			CurvatureRelations[covd]:=Join[CurvatureRelations[covd,Riemann],CurvatureRelations[covd,Ricci],CurvatureRelations[covd,Homothetic],CurvatureRelations[covd,CoRicci]];
 			Protect[CurvatureRelations]
 			];
 			If[curvrels,CurvatureRelationsQ[covd]=True;
 			AutomaticRules[riemann,CurvatureRelations[covd,Riemann],Verbose->False];
 			AutomaticRules[ricci,CurvatureRelations[covd,Ricci],Verbose->False];
+			AutomaticRules[homothetic,CurvatureRelations[covd,Homothetic],Verbose->False];
 			AutomaticRules[coricci,CurvatureRelations[covd,CoRicci],Verbose->False];
 			]		
 		];
@@ -996,21 +996,27 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 			If[metricQ && torsionQ,
 			NonMetricityQ[covd,metric]=False;
 			(* No additionnal curvature tensors when there is only torsion *)	
-			
+			(* We change the convention for the slots of Riemann : depends only on the connection by definition *)
+			SlotsOfTensor[riemann]^:={-vb,-vb,-vb,vb};
 			(***********************************************)	
 			(************** Connection tensors *************)
 			(***********************************************)
-			DefTensor[contorsion[a,-b,-c],M,Antisymmetric[{1,3}],ForceSymmetries->True,PrintAs -> GiveOutputString[Contorsion,covd],
+			DefTensor[contorsion[a,-b,-c],M,Antisymmetric[{1,3}],ForceSymmetries->True,PrintAs->GiveOutputString[Contorsion,covd],
 						Master-> covd,
 						OrthogonalTo:>If[orthogonalQ,{nv[-a],nv[b],nv[c]},{}],
 						ProjectedWith:>If[projectedQ,{projector[-a,a1],projector[b,-b1],projector[c,-c1]},{}],
-						DefInfo -> If[info, {"antisymmetric contorsion tensor",""}, False],TensorID->{Contorsion,covd}];	
+						DefInfo -> If[info, {"antisymmetric Contorsion tensor",""}, False],TensorID->{Contorsion,covd}];	
 			DefTensor[torsionvec[-a],M,PrintAs -> GiveOutputString[TorsionVector,covd],
 						Master-> covd,
 						OrthogonalTo:>If[orthogonalQ,{nv[a]},{}],
 						ProjectedWith:>If[projectedQ,{projector[a,-a1]},{}],
 						DefInfo -> If[info, {"torsion vector",""}, False],TensorID->{TorsionVector,covd}];
-			DefTensor[tftorsion[a,-b,-c],M,Antisymmetric[{2,3}],TraceFree->{a,-b,-c},PrintAs -> GiveOutputString[TFTorsion,covd],
+			DefTensor[tfcontorsion[a,-b,-c],M,Antisymmetric[{1,3}],ForceSymmetries->True,TraceFree->{a,-b,-c},
+							PrintAs:>GiveOutputString[TFContorsion,covd],Master->covd,
+							OrthogonalTo:>If[orthogonalQ,{nv[-a],nv[b],nv[c]},{}],
+							ProjectedWith:>If[projectedQ,{projector[-a,a1],projector[b,-b1],projector[c,-c1]},{}],
+							DefInfo -> If[info, {"trace free part of the Contorsion tensor",""}, False],TensorID->{TFContorsion,covd}];
+			DefTensor[tftorsion[a,-b,-c],M,Antisymmetric[{2,3}],TraceFree->{a,-b,-c},PrintAs->GiveOutputString[TFTorsion,covd],
 						Master-> covd, 
 						OrthogonalTo:>If[orthogonalQ,{nv[-a],nv[b],nv[c]},{}],
 						ProjectedWith:>If[projectedQ,{projector[-a,a1],projector[b,-b1],projector[c,-c1]},{}],
@@ -1019,12 +1025,26 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 			(**********************************************)	
 			(************** TraceFree rules ***************)
 			(**********************************************)
-			RicciToTFRicciRules[covd]=ToRule[ricci[-a,-b]==tfricci[-a,-b]+ToTraceTensor[ricci[-a,-b],1,metric]];
-			TFRicciToRicciRules[covd]=ToRule[tfricci[-a,-b]==ToTracelessTensor[ricci[-a,-b],1,metric]];
-			TFContorsionToContorsionRules[covd]=ToRule[tfcontorsion[a,-b,-c]==(ToTracelessTensor[contorsion[a,-b,-c],1,metric])];
-			ContorsionToTFContorsionRules[covd]=ToRule[contorsion[a,-b,-c]==(tfcontorsion[a,-b,-c]+ToTraceTensor[contorsion[a,-b,-c],1,metric])];
-			TFTorsionToTorsionRules[covd]=ToRule[tftorsion[a,-b,-c]==(ToTracelessTensor[torsion[a,-b,-c],1,metric])];
-			TorsionToTFTorsionRules[covd]=ToRule[torsion[a,-b,-c]==(tftorsion[a,-b,-c]+ToTraceTensor[torsion[a,-b,-c],1,metric])]
+			RicciToTFRicciRules[covd]=ToRule[ricci[-a,-b]==tfricci[-a,-b]+TraceProject[ricci[-a,-b],metric]];
+			TFRicciToRicciRules[covd]=ToRule[tfricci[-a,-b]==TracelessProject[ricci[-a,-b],1,metric]];
+			TFContorsionToContorsionRules[covd]=ToRule[tfcontorsion[a,-b,-c]==(TracelessProject[contorsion[a,-b,-c],1,metric])];
+			ContorsionToTFContorsionRules[covd]=ToRule[contorsion[a,-b,-c]==(tfcontorsion[a,-b,-c]+TraceProject[contorsion[a,-b,-c],metric])];
+			TFTorsionToTorsionRules[covd]=ToRule[tftorsion[a,-b,-c]==(TracelessProject[torsion[a,-b,-c],1,metric])];
+			TorsionToTFTorsionRules[covd]=ToRule[torsion[a,-b,-c]==(tftorsion[a,-b,-c]+TraceProject[torsion[a,-b,-c],metric])];
+			
+			(***********************************************)	
+			(*********** Connection relations **************)
+			(***********************************************)
+			
+			ConnectionRelations[covd,Torsion]=MakeRule[{torsion[a,-b,-a],torsionvec[-b]}];	
+			ConnectionRelations[covd,Contorsion]=MakeRule[{contorsion[a,-a,-b],-torsionvec[-b]}];	
+			(*ConnectionRelations[covd,Contorsion]=Join[MakeRule[{disformation[b,-a,a],disformation1[b]}],MakeRule[{disformation[a,-b,-a],disformation2[-b]}]];*)
+			If[connectionrels,
+			If[info,Print["** DefCovD:  Contractions of Distortion, Torsion, and Nonmetritcity automatically replaced by corresponding vectors."]];
+				covd/: ConnectionRelationsQ[covd]:=True;
+				AutomaticRules[torsion,ConnectionRelations[covd,Torsion],Verbose->False];
+				AutomaticRules[contorsion,ConnectionRelations[covd,Distorsi],Verbose->False];
+				,covd/:ConnectionRelationsQ[covd]:=False];
 						
 			(************************************************************************************)	
 			(****************************** Curvature relations *********************************)
@@ -1050,13 +1070,17 @@ MAGDefTensors[covd_?CovDQ[ind_],metric_?MetricQ,options___?OptionQ]:=With[
 (************************** Weyl To Riemann and Riemann To Weyl rules ******************************************)
 (***************************************************************************************************************)	
 			If[!FrozenMetricQ[metric],
-			WeylToRiemannRules[covd]=ToRule[weylmag[-a,-b,-c,d]==CollectTensors[ToTracelessTensor[riemann[-a,-b,-c,d],1,metric]]];
+			WeylToRiemannRules[covd]=ToRule[weylmag[-a,-b,-c,d]==CollectTensors[TracelessProject[riemann[-a,-b,-c,d],1,metric]]];
 			RiemannToWeylRules[covd]=ToRule[riemann[-a,-b,-c,d]==CollectTensors[weylmag[-a,-b,-c,d]+
-										ToTracelessTensor[riemann[-a,-b,-c,d],2,metric]+ToTraceTensor[riemann[-a,-b,-c,d],2,metric]]],
-			WeylToRiemannRules[covd]=SafeToRule[weylmag[-a,-b,-c,d]==Collect[ToTracelessTensor[riemann[-a,-b,-c,d],1,metric],{_metric,_imetric,_delta,_riemann,_ricci,_ricciscalar},Factor]];
+										TracelessProject[riemann[-a,-b,-c,d],2,metric]+TraceProject[riemann[-a,-b,-c,d],metric]]],
+			WeylToRiemannRules[covd]=SafeToRule[weylmag[-a,-b,-c,d]==Collect[TracelessProject[riemann[-a,-b,-c,d],1,metric],{_metric,_imetric,_delta,_riemann,_ricci,_ricciscalar},Factor]];
 			RiemannToWeylRules[covd]=SafeToRule[riemann[-a,-b,-c,d]==Collect[weylmag[-a,-b,-c,d]+
-										ToTracelessTensor[riemann[-a,-b,-c,d],2,metric]+ToTraceTensor[riemann[-a,-b,-c,d],2,metric],{_metric,_imetric,
-										_delta,_weylmag,_ricci,_ricciscalar},Factor]]];	
+										TracelessProject[riemann[-a,-b,-c,d],2,metric]+TraceProject[riemann[-a,-b,-c,d],metric],{_metric,_imetric,
+										_delta,_weylmag,_ricci,_ricciscalar},Factor]]];
+			If[dcpQ,
+				DefConnectionPerturbation[christoffel[a,-b,-c],pertchristoffel];
+			];	
+		]
 		]
 		]
 		]
@@ -1084,6 +1108,10 @@ NonMetricityToTFNonMetricityRules[covd_?LeviCivitaQ]={};
 TFNonMetricityToNonMetricityRules[covd_?LeviCivitaQ]={};
 TorsionToTFTorsionRules[covd_?LeviCivitaQ]={};
 TFTorsionToTorsionRules[covd_?LeviCivitaQ]={};
+RicciToEinsteinRules[PD]={};
+RicciToEinsteinRules[covd_?LeviCivitaQ]={};
+EinsteinToRicciRules[PD]={};
+EinsteinToRicciRules[covd_?LeviCivitaQ]={};
 
 
 (* ::Input::Initialization:: *)
@@ -1109,27 +1137,35 @@ deflistablexTensorxMAGCovDs[function_]:=With[{rules=SymbolJoin[function,"Rules"]
 Unprotect[function];
 function[expr_,covd_Symbol?CovDQ]=.;
 If[function===WeylToRiemann,
-function[expr_,covd_Symbol?(!SameQ[#,PD]&&(LeviCivitaQ[#,MasterOf[#]]&&!FrozenMetricQ[MasterOf[#]])||(TorsionQ[#]&&!NonMetricityQ[#])&)]:=expr/. xAct`xTensor`Private`WeylToRiemannRules[covd];
+function[expr_,covd_Symbol?(!SameQ[#,PD]&&(LeviCivitaQ[#,MasterOf[#]]||(TorsionQ[#]&&!NonMetricityQ[#]))&)]:=expr/. xAct`xTensor`Private`WeylToRiemannRules[covd];
 function[expr_,covd_Symbol]:=expr/.WeylToRiemannRules[covd]
 ];
 If[function===RiemannToWeyl,
-function[expr_,covd_Symbol?(!SameQ[#,PD]&&(LeviCivitaQ[#,MasterOf[#]]&&!FrozenMetricQ[MasterOf[#]])||(TorsionQ[#]&&!NonMetricityQ[#])&)]:=expr/. xAct`xTensor`Private`RiemannToWeylRules[covd];
+function[expr_,covd_Symbol?(!SameQ[#,PD]&&(LeviCivitaQ[#,MasterOf[#]]||(TorsionQ[#]&&!NonMetricityQ[#]))&)]:=expr/. xAct`xTensor`Private`RiemannToWeylRules[covd];
 function[expr_,covd_Symbol]:=expr/.RiemannToWeylRules[covd]
 ];
 If[function===TFRicciToRicci,
-function[expr_,covd_Symbol?(!SameQ[#,PD]&&(LeviCivitaQ[#,MasterOf[#]]&&!FrozenMetricQ[MasterOf[#]])||(TorsionQ[#]&&!NonMetricityQ[#])&)]:=expr/. xAct`xTensor`Private`TFRicciToRicciRules[covd];
+function[expr_,covd_Symbol?(!SameQ[#,PD]&&(LeviCivitaQ[#,MasterOf[#]]||(TorsionQ[#]&&!NonMetricityQ[#]))&)]:=expr/. xAct`xTensor`Private`TFRicciToRicciRules[covd];
 function[expr_,covd_Symbol]:=expr/.TFRicciToRicciRules[covd]
 ];
 If[function===RicciToTFRicci,
-function[expr_,covd_Symbol?(!SameQ[#,PD]&&(LeviCivitaQ[#,MasterOf[#]]&&!FrozenMetricQ[MasterOf[#]])||(TorsionQ[#]&&!NonMetricityQ[#])&)]:=expr/. xAct`xTensor`Private`RicciToTFRicciRules[covd];
+function[expr_,covd_Symbol?(!SameQ[#,PD]&&(LeviCivitaQ[#,MasterOf[#]]||(TorsionQ[#]&&!NonMetricityQ[#]))&)]:=expr/. xAct`xTensor`Private`RicciToTFRicciRules[covd];
 function[expr_,covd_Symbol]:=expr/.RicciToTFRicciRules[covd]
 ];
+If[function===EinsteinToRicci,
+function[expr_,covd_Symbol?(!SameQ[#,PD]&&((LeviCivitaQ[#,MasterOf[#]]||(TorsionQ[#]&&!NonMetricityQ[#]))&&!FrozenMetricQ[MasterOf[#]])&)]:=expr/. xAct`xTensor`Private`EinsteinToRicciRules[covd];
+function[expr_,covd_Symbol]:=expr/.EinsteinToRicciRules[covd]
+];
+If[function===RicciToEinstein,
+function[expr_,covd_Symbol?(!SameQ[#,PD]&&(LeviCivitaQ[#,MasterOf[#]]||(TorsionQ[#]&&!NonMetricityQ[#]))&)]:=expr/. xAct`xTensor`Private`RicciToEinsteinRules[covd];
+function[expr_,covd_Symbol]:=expr/.RicciToEinsteinRules[covd]
+];
 If[function===ProjectDerivative,
-function[expr_,covd_Symbol?(!SameQ[#,PD]&&(LeviCivitaQ[#,MasterOf[#]]&&!FrozenMetricQ[MasterOf[#]])||(TorsionQ[#]&&!NonMetricityQ[#])&)]:=expr/. xAct`xTensor`Private`ProjectDerivativeRules[covd];
+function[expr_,covd_Symbol?(!SameQ[#,PD]&&(LeviCivitaQ[#,MasterOf[#]]||(TorsionQ[#]&&!NonMetricityQ[#]))&)]:=expr/. xAct`xTensor`Private`ProjectDerivativeRules[covd];
 function[expr_,covd_Symbol]:=expr/.ProjectDerivativeRules[covd]
 ];
 function[expr_,PD]:=expr/.rules[PD];
-function[expr_,covd_?NonMetricityQ]:=expr/.rules[covd];
+(*function[expr_,covd_?NonMetricityQ]:=expr/.rules[covd];*)
 SetNumberOfArguments[function,{1,2}];
 Protect[function]
 ];
@@ -1140,17 +1176,7 @@ xAct`xTensor`Private`deflistableCovDs/@{CoRicciToTFCoRicci,TFCoRicciToCoRicci,Di
 
 
 (* ::Input::Initialization:: *)
-deflistablexTensorxMAGCovDs/@{RicciToTFRicci,TFRicciToRicci,RiemannToWeyl,WeylToRiemann};
-
-
-(* ::Input::Initialization:: *)
-(* This would be the place to check the input, but we have nothing to check *)
-DefCovDBeginning[covd_[ind_],vbundles_,options___?OptionQ]:=Null;
-(* Here we do the actual work *)
-DefCovDEnd[covd_[ind_],vbundles_,options___?OptionQ]:=Module[
-{metric=OptionValue[DefCovD,{options},DefMAGTensors]},
-If[metric=!=Null,MAGDefTensors[covd[ind],metric,options]];
-];
+deflistablexTensorxMAGCovDs/@{RicciToTFRicci,TFRicciToRicci,RiemannToWeyl,WeylToRiemann,RicciToEinstein,EinsteinToRicci};
 
 
 (* ::Input::Initialization:: *)
@@ -1160,9 +1186,12 @@ xTension["xMAG`",DefCovD,"End"]:=DefCovDEnd;
 
 (* ::Input::Initialization:: *)
 Unprotect[UndefCovD];
-UndefCovD[covd_]:=Catch@With[{manifold=ManifoldOfCovD[covd],ef=ExtendedFrom[covd]},Module[{servants=ServantsOf[covd],christoffels},
+UndefCovD[covd_]:=Catch@With[{manifold=ManifoldOfCovD[covd],ef=ExtendedFrom[covd],master=MasterOf[covd]},Module[{servants=ServantsOf[covd],christoffels,christoffel=GiveSymbol[Christoffel,covd]},
 If[!CovDQ[covd],Throw[Message[UndefCovD::unknown,"covariant derivative",covd]]];
-MasterOf[covd]^={};
+If[master=!=Null,
+ServantsOf[master]^=DeleteCases[ServantsOf[master],covd];
+MasterOf[covd]^={}];
+VisitorsOf[christoffel]^={};
 xAct`xTensor`Private`CheckRemoveSymbol[covd];
 MakexTensions[UndefCovD,"Beginning",covd];
 xUpSet[ServantsOf[covd],{}];
@@ -1173,7 +1202,7 @@ Undef/@Union[First/@christoffels,servants];
 If[ef=!=Null,
 xUpDeleteCasesTo[VisitorsOf[ef],covd];xAct`xTensor`Private`RemoveSymbol/@(StringJoin[#,ToString[covd]]&/@Join[{"Christoffel","Riemann","Ricci","Torsion"},If[MetricOfCovD[ef]=!=Null,{"RicciScalar","Weyl","TFRicci","Einstein","Kretschmann"},{}]])];
 $CovDs=DeleteCases[$CovDs,covd];
-If[MetricOfCovD[covd]=!=Null,
+If[MetricOfCovD[covd]=!=Null&&!FrozenQ[MetricOfCovD[covd]]||(!xTensorQ[GiveSymbol[Contorsion,covd]]||!xTensorQ[GiveSymbol[Disformation,covd]])&&MetricOfCovD[covd]===Null,
 Unset[xAct`xTensor`Private`RiemannToWeylRules[covd]];
 Unset[xAct`xTensor`Private`WeylToRiemannRules[covd]];
 Unset[xAct`xTensor`Private`RicciToTFRicciRules[covd]];
@@ -1215,13 +1244,21 @@ Unset[TFContorsionToContorsionRules[covd]];
 Unset[TorsionToTFTorsionRules[covd]];
 Unset[TFTorsionToTorsionRules[covd]]]]]]
 ];
-Unset[SortCovDs[expr_,covd]];
+If[MetricOfCovD[covd]=!=Null&&!TorsionQ[covd],
+Unset[SortCovDs[expr_,covd]]];
 MakexTensions[UndefCovD,"End",covd];
 xAct`xTensor`Private`$ChristoffelsMakeUndefInfo[UndefCovD,covd];
 xAct`xTensor`Private`RemoveSymbol[covd];
 ]
 ];
 Protect[UndefCovD];
+
+
+(* ::Input::Initialization:: *)
+(******* Need to be carefull with $TorsionSign ****) 
+
+xAct`xTensor`Private`changeRiemann[covd1_,covd2_,{_,_,_},riemann_][-c_Symbol,-d_Symbol,-b_Symbol,a_Symbol]:=With[{chr=HeadOfTensor[Christoffel[covd1,covd2][a,-c,-b],{a,-c,-b}]},Module[{e=DummyAs[a]},
+riemann[covd2][-c,-d,-b,a]+ToCanonical[$RiemannSign(-covd2[-c][chr[a,-d,-b]]+covd2[-d][chr[a,-c,-b]]-chr[a,-c,-e]chr[e,-d,-b]+chr[a,-d,-e]chr[e,-c,-b]+If[riemann===Riemann,-$TorsionSign TorsionToDistortion[Torsion[covd2][e,-c,-d]]chr[a,-e,-b],0])]]];
 
 
 (* ::Input::Initialization:: *)
@@ -1329,6 +1366,82 @@ MAGChristoffelQ[covd,metric]:=False;
 
 
 (* ::Input::Initialization:: *)
+Options[DefConnectionPerturbation]={PrintAs->"\[Delta]\[CapitalGamma]"};
+DefConnectionPerturbation[christoffel_?xTensorQ[i1_,-i2_,-i3_],pert_Symbol,param_Symbol:Automatic,options___?OptionQ] :=Module[{covd=MasterOf[christoffel],vbundle=SlotsOfTensor[christoffel][[1]],manifold=Sequence@@DependenciesOfTensor[christoffel],indices,pa,torsionQ,nonmetricityQ,metric},
+{pa}={PrintAs}/.CheckOptions[options]/.Options[DefConnectionPerturbation];
+(* Define parameter if it does not exist yet *)
+If[!ParameterQ[param],
+If[param===Automatic,
+DefParameter[GiveSymbol[PerturbationParameter,christoffel],PrintAs:>GiveOutputString[PerturbationParameter,christoffel]],
+DefParameter[param]
+]];
+(*indices=GetIndicesOfVBundle[vbundle,4];*)
+metric=MasterOf[covd];
+torsionQ=TorsionQ[covd];
+nonmetricityQ=NonMetricityQ[covd,metric];
+If[torsionQ&&nonmetricityQ,
+DefTensorPerturbation[pert[LI["order"],i1,-i2,-i3],christoffel[i1,-i2,-i3],manifold,PrintAs->pa]];
+If[torsionQ&&!nonmetricityQ,
+DefTensorPerturbation[pert[LI["order"],i1,-i2,-i3],christoffel[i1,-i2,-i3],manifold,Antisymmetric[{2,4}],ForceSymmetries->True,Master->metric,PrintAs->pa]];
+If[!torsionQ&&nonmetricityQ,
+DefTensorPerturbation[pert[LI["order"],i1,-i2,-i3],christoffel[i1,-i2,-i3],manifold,Symmetric[{3,4}],ForceSymmetries->True,Master->metric,PrintAs->pa]];
+DefConnectionVariation[christoffel,pert,param]
+(* Store perturbation structure in global variables *)
+]
+
+
+(* ::Input::Initialization:: *)
+DefConnectionVariation[christoffel_?xTensorQ,pert_,Automatic]:=DefConnectionVariation[christoffel,pert,PerturbationParameter[christoffel]];
+
+
+(* ::Input::Initialization:: *)
+DefConnectionVariation[christoffel_?xTensorQ,per_,param_]:=Module[{covd=MasterOf[christoffel],var,M,vb,i1,i2,i3,i4,j1,a1,a2,a3,a4,torsionQ,nonmetricityQ,metric,cd,PertRiemannCD\[CapitalGamma],PertRicciCD\[CapitalGamma],PertCoRicciCD\[CapitalGamma],PertHomotheticCD\[CapitalGamma],PertRicciScalar\[CapitalGamma],PertWeyl\[CapitalGamma],pertmet,weyl},vb=SlotsOfTensor[christoffel][[1]];
+M=BaseOfVBundle@vb;
+{i1,i2,i3,i4,j1,a1,a2,a3,a4}=GetIndicesOfVBundle[vb,9];
+metric=MasterOf[covd];
+torsionQ=TorsionQ[covd];
+nonmetricityQ=NonMetricityQ[covd,metric];
+cd=CovDOfMetric[metric];
+weyl=GiveSymbol[Weyl,covd];
+MAGChristoffelTensorStart[covd,metric,Verbose->False];
+If[Perturbation[christoffel[i1,-i2,-i3]]=!=per[LI[1],i1,-i2,-i3],Throw@Message[DefConnectionVariation::error,"connection perturbation does not match or is not defined."]];
+Block[{$DefInfoQ=False},
+If[torsionQ&&nonmetricityQ,
+DefTensor[var[i1,-i2,-i3],M,Master->metric]];
+If[torsionQ&&!nonmetricityQ,
+DefTensor[var[i1,-i2,-i3],M,Antisymmetric[{1,3}],ForceSymmetries->True,Master->metric]];
+If[!torsionQ&&nonmetricityQ,
+DefTensor[var[i1,-i2,-i3],M,Symmetric[{2,3}],ForceSymmetries->True,Master->metric]]
+];
+(*********** To Do : DefMetric perturbation if not defined ??? *****)
+With[{sqrt=Sqrt[SignDetOfMetric[metric] Determinant[metric][]]},
+PertRiemannCD\[CapitalGamma]=Perturbation[Riemann[covd][-i1_Symbol,-i2_Symbol,-i3_Symbol,i4_Symbol]]:>christoffel[i4, -i2, -j1]*per[LI[1], j1, -i1, -i3] -christoffel[i4, -i1, -j1]*per[LI[1], j1, -i2, -i3] - christoffel[j1, -i2, -i3]*per[LI[1], i4, -i1, -j1] + christoffel[j1, -i1, -i3]*per[LI[1], i4, -i2, -j1] - PD[-i1][per[LI[1], i4, -i2, -i3]] + PD[-i2][per[LI[1], i4, -i1, -i3]];
+PertRicciCD\[CapitalGamma]=Perturbation[Ricci[covd][-i1_Symbol,-i2_Symbol]]:>christoffel[i4, -i4, -i3]*per[LI[1],i3, -i1, -i2] -christoffel[i4, -i1, -j1]*per[LI[1], j1, -i4, -i2] - christoffel[j1, -i4, -i2]*per[LI[1], i4, -i1, -j1] + christoffel[j1, -i1, -i2]*per[LI[1], i4, -i4, -j1] - PD[-i1][per[LI[1], i4, -i4, -i2]] + PD[-i4][per[LI[1], i4, -i1, -i2]];
+PertHomotheticCD\[CapitalGamma]=Perturbation[Homothetic[covd][-i1_Symbol,-i2_Symbol]]:>(-christoffel[i4, -i2, -j1])*per[LI[1], j1, -i1, -i4] + christoffel[i4, -i1, -j1]*per[LI[1], j1, -i2, -i4] + 
+  christoffel[j1, -i2, -i4]*per[LI[1], i4, -i1, -j1] - christoffel[j1, -i1, -i4]*per[LI[1], i4, -i2, -j1] + 
+  PD[-i1][per[LI[1], i4, -i2, -i4]] - PD[-i2][per[LI[1], i4, -i1, -i4]];
+PertCoRicciCD\[CapitalGamma]=Perturbation[CoRicci[covd][i1_Symbol,-i2_Symbol]]:>(-christoffel[i1, -i4, -j1])*per[LI[1], j1, -i2, i4] + christoffel[i1, -i2, -j1]*per[LI[1],j1, -i4, i4] + 
+  christoffel[j1, -i4, i4]*per[LI[1], i1, -i2, -j1] - christoffel[j1, -i2, i4]*per[LI[1], i1, -i4, -j1] +  metric[i4, j1]*PD[-i2][per[LI[1], i1, -i4, -j1]]- metric[i4, j1]*PD[-i4][per[LI[1], i1, -i2, -j1]];
+PertRicciScalar\[CapitalGamma]=Perturbation[RicciScalar[covd][]]:>metric[i1, i2]*((-christoffel[i4, -i3, -i2])*per[LI[1], i3, -i1, -i4] + christoffel[i4, -i1, -i2]*per[LI[1], i3, -i3, -i4] + 
+   christoffel[i3, -i3, -i4]*per[LI[1], i4, -i1, -i2] - christoffel[i3, -i1, -i4]*per[LI[1], i4, -i3, -i2] - 
+   PD[-i1][per[LI[1], i3, -i3, -i2]] + PD[-i3][per[LI[1],i3, -i1, -i2]]);
+PertWeyl\[CapitalGamma]=Perturbation[weyl[-a1_Symbol,-a2_Symbol,-a3_Symbol,a4_Symbol]]:>TracelessProjector[4,1,metric,{i1,i2,i3,-i4,-a1,-a2,-a3,a4}]*(christoffel[i4, -i2, -j1]*per[LI[1], j1, -i1, -i3] -christoffel[i4, -i1, -j1]*per[LI[1], j1, -i2, -i3] - christoffel[j1, -i2, -i3]*per[LI[1], i4, -i1, -j1] + christoffel[j1, -i1, -i3]*per[LI[1], i4, -i2, -j1] - PD[-i1][per[LI[1], i4, -i2, -i3]] + PD[-i2][per[LI[1], i4, -i1, -i3]]);
+(*We can now define a total variation (w.r.t.to connection) as follows.Note that we're only varying the connection and hence set variations of any other tensors to zero.*)
+VarDt[christoffel,expr_]:=Module[{mod},mod=Expand[Perturbation[SeparateMetric[NoScalar[expr]]]]//.PertRiemannCD\[CapitalGamma]//.PertRicciCD\[CapitalGamma]//.PertHomotheticCD\[CapitalGamma]//.PertCoRicciCD\[CapitalGamma]//.PertRicciScalar\[CapitalGamma]//.PertWeyl\[CapitalGamma];
+ExpandPerturbation@SameDummies@mod/. {per[LI[1],inds___]:>var[inds],p:(tensor_[LI[1],___])/;(xTensorQ[tensor]&&tensor=!=per&&PerturbationOrder[p]===1)->0}];
+(*The functional derivation is then defined as...*)
+VarD[christoffel[inds___],cd][expr_]:=Module[{mod,withvar,novar},mod=Expand@VarDt[christoffel,expr];
+novar=mod/. var[__]->0;
+withvar=mod-novar;
+ToCanonical[ContractMetric[BreakChristoffel[VarD[var[inds],cd][withvar],cd]]/.CurvatureRelations[covd]]
+];
+(*And finally one handy function that varies Lagrangians,and thus takes care of the square root of the determinant.*)VarL[christoffel[inds___]][L_]:=VarL[christoffel[inds],cd][L];
+VarL[christoffel[inds___],cd][L_]:=VarD[christoffel[inds],cd][L];
+]
+];
+
+
+(* ::Input::Initialization:: *)
 TorsionToDistortion::def="`1` has no torsion.";
 
 
@@ -1340,7 +1453,7 @@ NonMetricityToDistortion::def="`1` is compatible with the metric `2`.";
 HomotheticToRiemann[expr_,PD]:=expr;
 HomotheticToRiemann[exp_,covd_?LeviCivitaQ]:=exp;
 HomotheticToRiemann[exp_,covd_?(!NonMetricityQ[#]&)]:=exp;
-HomotheticToRiemann[exp_,covd_?NonMetricityQ]:=With[{indices=GetIndicesOfVBundle[First@VBundlesOfCovD@covd,2]},With[{i1=First@indices,i2=Last@indices},exp/.{Homothetic[covd][c_,d_]:>Module[{e=DummyIn@First@VBundlesOfCovD@covd},Riemann[covd][d,c,-e,e]]}]];
+HomotheticToRiemann[exp_,covd_?NonMetricityQ]:=With[{indices=GetIndicesOfVBundle[First@VBundlesOfCovD@covd,2]},With[{i1=First@indices,i2=Last@indices},exp/.{Homothetic[covd][c_,d_]:>Module[{e=DummyIn@First@VBundlesOfCovD@covd},$RiemannSign*Riemann[covd][d,c,-e,e]]}]];
 HomotheticToRiemann[expr_]:=Fold[HomotheticToRiemann,expr,$CovDs];
 
 
@@ -1348,7 +1461,7 @@ HomotheticToRiemann[expr_]:=Fold[HomotheticToRiemann,expr,$CovDs];
 CoRicciToRiemann[expr_,PD]:=expr;
 CoRicciToRiemann[exp_,covd_?LeviCivitaQ]:=exp;
 CoRicciToRiemann[exp_,covd_?(!NonMetricityQ[#]&)]:=exp;
-CoRicciToRiemann[exp_,covd_?NonMetricityQ]:=With[{indices=GetIndicesOfVBundle[First@VBundlesOfCovD@covd,2]},With[{i1=First@indices,i2=Last@indices},exp/.{CoRicci[covd][c_,d_]:>Module[{e=DummyIn@First@VBundlesOfCovD@covd},Riemann[covd][-e,d,e,c]]}]];
+CoRicciToRiemann[exp_,covd_?NonMetricityQ]:=With[{indices=GetIndicesOfVBundle[First@VBundlesOfCovD@covd,2]},With[{i1=First@indices,i2=Last@indices},exp/.{CoRicci[covd][c_,d_]:>Module[{e=DummyIn@First@VBundlesOfCovD@covd},-$RicciSign*Riemann[covd][c,-e,e,d]]}]];
 CoRicciToRiemann[expr_]:=Fold[CoRicciToRiemann,expr,$CovDs];
 
 
@@ -1363,7 +1476,7 @@ ToRiemann[expr_,cd_?CovDQ/;!NonMetricityQ[cd]]:=Composition[If[!CurvatureRelatio
 
 (* ::Input::Initialization:: *)
 BreakDistortion[exp_,covd_?CovDQ,metric_?MetricQ]:=Module[
-{rule,vb=VBundleOfMetric[metric],indices = GetIndicesOfVBundle[VBundleOfMetric[metric], 3]},
+{rule,vb=VBundleOfMetric[metric],indices = GetIndicesOfVBundle[VBundleOfMetric[metric], 3],res,crQ=ConnectionRelationsQ[covd]},
 With[{i1= indices[[1]],
 		i2= indices[[2]],
 	i3= indices[[3]],
@@ -1371,10 +1484,13 @@ With[{i1= indices[[1]],
 	nonmetricity=GiveSymbol[NonMetricity,covd],
 		torsion=GiveSymbol[Torsion,covd]
 	},
+If[crQ,ClearConnectionRelations[covd,Verbose->False]];
 	rule=MakeRule[{distortion[i1,-i2,-i3],(1/2)*nonmetricity[i1, -i2, -i3] - (1/2)*nonmetricity[-i2, i1, -i3] 
 	- (1/2)*nonmetricity[-i3, i1, -i2] +  (1/2)*torsion[i1, -i2, -i3] + (1/2)*torsion[-i2, i1, -i3] + (1/2)*torsion[-i3, i1, -i2]}];
-	exp/.(Flatten@(InverseMakeRule/@ConnectionRelations[covd]))/.rule
-	]
+	res=exp/.(Flatten@(InverseMakeRule/@ConnectionRelations[covd]))/.rule;
+If[crQ,SetConnectionRelations[covd,Verbose->False]]
+	];
+res
 ]
 
 
@@ -1382,16 +1498,19 @@ With[{i1= indices[[1]],
 BreakContorsion[exp_,covd_?CovDQ,metric_?MetricQ]:=Module[
 {rule,
 vb=VBundleOfMetric[metric],
-indices = GetIndicesOfVBundle[VBundleOfMetric[metric], 3]},
+indices = GetIndicesOfVBundle[VBundleOfMetric[metric], 3],res,crQ=ConnectionRelationsQ[covd]},
 With[{a= indices[[1]],
 		b= indices[[2]],
 	c= indices[[3]],
 	torsion=GiveSymbol[Torsion,covd],
 	contorsion= GiveSymbol[Contorsion,covd]
 	},
+If[crQ,ClearConnectionRelations[covd,Verbose->False]];
 	rule=MakeRule[{contorsion[a,-b,-c],1/2*torsion[a,-b,-c]+1/2torsion[-b,a,-c]+1/2*torsion[-c,a,-b]}];
-	exp/.(Flatten@(InverseMakeRule/@ConnectionRelations[covd]))/.rule
-	]
+	res=exp/.(Flatten@(InverseMakeRule/@ConnectionRelations[covd]))/.rule;
+If[crQ,SetConnectionRelations[covd,Verbose->False]]
+	];
+res
 ]
 
 
@@ -1399,16 +1518,19 @@ With[{a= indices[[1]],
 BreakDisformation[exp_,covd_?CovDQ,metric_?MetricQ]:=Module[
 {rule,
 vb=VBundleOfMetric[metric],
-indices = GetIndicesOfVBundle[VBundleOfMetric[metric], 3]},
+indices = GetIndicesOfVBundle[VBundleOfMetric[metric], 3],res,crQ=ConnectionRelationsQ[covd]},
 With[{a= indices[[1]],
 		b= indices[[2]],
 	c= indices[[3]],
 	nonmetricity=GiveSymbol[NonMetricity,covd],
 	disformation= GiveSymbol[Disformation,covd]
 	},
+If[crQ,ClearConnectionRelations[covd,Verbose->False]];
 	rule=MakeRule[{disformation[a,-b,-c],1/2*nonmetricity[a,-b,-c]-1/2*nonmetricity[-b,a,-c]-1/2*nonmetricity[-c,a,-b]}];
-	exp/.(Flatten@(InverseMakeRule/@ConnectionRelations[covd]))/.rule
-	]
+	res=exp/.(Flatten@(InverseMakeRule/@ConnectionRelations[covd]))/.rule;
+If[crQ,SetConnectionRelations[covd,Verbose->False]]
+	];
+res
 ]
 
 
@@ -1506,8 +1628,7 @@ With[{a= indices[[1]],
 	distortion= GiveSymbol[Distortion,covd],
 	contorsion=GiveSymbol[Contorsion,covd]
 	},
-	If[!torsionQ,
-	Message[TorsionToDistortion::def, covd]];
+	If[!torsionQ,rule={}];
 	If[nmQ&&torsionQ,
 	rule=ToRule[torsion[a,-b,-c]==2Antisymmetrize[distortion[a,-b,-c],{-b,-c}]];
 	];
@@ -1538,23 +1659,26 @@ With[{a= indices[[1]],
 
 
 (* ::Input::Initialization:: *)
-BreakDistortion[exp_,covd_]:=BreakDistortion[exp,covd,MasterOf[covd]];
+BreakDistortion[exp_,PD,_Symbol]:=exp;
+BreakDistortion[exp_,covd_Symbol?LeviCivitaQ]:=exp;
+BreakDistortion[exp_,covd_Symbol?(TorsionQ[#]&&NonMetricityQ[#]&)]:=BreakDistortion[exp,covd,MasterOf[covd]];
+BreakDistortion[exp_,covd_Symbol?(!TorsionQ[#]&&NonMetricityQ[#]&)]:=BreakDisformation[exp,covd];
+BreakDistortion[exp_,covd_Symbol?(TorsionQ[#]&&!NonMetricityQ[#]&)]:=BreakContorsion[exp,covd];
 BreakDistortion[exp_]:=BreakDistortion[exp,$CovDs];
 BreakDistortion[expr_,list_List]:=Fold[BreakDistortion,expr,list];
-BreakDistortion[exp_,PD,_Symbol]:=exp;
-BreakDistortion[exp_,covd_?LeviCivitaQ]:=exp;
 
-BreakDisformation[exp_,covd_]:=BreakDisformation[exp,covd,MasterOf[covd]];
+BreakDisformation[exp_,PD,_Symbol]:=exp;
+BreakDisformation[exp_,covd_Symbol?LeviCivitaQ]:=exp;
+BreakDisformation[exp_,covd_Symbol?(!NonMetricityQ[#]&)]:=exp;
+BreakDisformation[exp_,covd_Symbol?(NonMetricityQ[#]&)]:=BreakDisformation[exp,covd,MasterOf[covd]];
 BreakDisformation[exp_]:=BreakDisformation[exp,$CovDs];
 BreakDisformation[expr_,list_List]:=Fold[BreakDisformation,expr,list];
-BreakDisformation[exp_,PD,_Symbol]:=exp;
-BreakDisformation[exp_,covd_?LeviCivitaQ]:=exp;
 
-BreakContorsion[exp_,covd_]:=BreakContorsion[exp,covd,MasterOf[covd]];
-BreakContorsion[exp_]:=BreakContorsion[exp,$CovDs];
-BreakContorsion[expr_,list_List]:=Fold[BreakContorsion,expr,list];
 BreakContorsion[exp_,PD,_Symbol]:=exp;
-BreakContorsion[exp_,covd_?LeviCivitaQ]:=exp;
+BreakContorsion[exp_,covd_Symbol?(!TorsionQ[#]&)]:=exp;
+BreakContorsion[exp_,covd_Symbol?(TorsionQ[#]&)]:=BreakContorsion[exp,covd,MasterOf[covd]];
+BreakContorsion[expr_,list_List]:=Fold[BreakContorsion,expr,list];
+BreakContorsion[exp_]:=BreakContorsion[exp,$CovDs];
 
 DisformationToDistortion[exp_,covd_]:=DisformationToDistortion[exp,covd,MasterOf[covd]];
 DisformationToDistortion[exp_]:=DisformationToDistortion[exp,$CovDs];
@@ -1597,190 +1721,62 @@ TorsionToContorsion[exp_,covd_?LeviCivitaQ]:=exp;
 Options[ToDistortion]:={Verbose->True}
 ToDistortion[exp_,covd_?CovDQ,metric_?MetricQ,Options:OptionsPattern[]]:=Module[
 {indices = GetIndicesOfVBundle[VBundleOfMetric[metric],3],covdmetric=CovDOfMetric[metric],
-nmQ=NonMetricityQ[covd,metric],torsionQ=TorsionQ[covd],res,verbose},
+nmQ=NonMetricityQ[covd,metric],torsionQ=TorsionQ[covd],res,verbose,curvQ=CurvatureRelationsQ[covd],conQ=ConnectionRelationsQ[covd]},
 With[{a= indices[[1]],b= indices[[2]],c= indices[[3]],
 	torsion=GiveSymbol[Torsion,covd],
 	contorsion= GiveSymbol[Contorsion,covd]
 	},
 {verbose}=OptionValue[{Verbose}];
 If[!MAGChristoffelQ[covd,metric],MAGChristoffelTensorStart[covd,metric,Verbose->verbose]];
-If[nmQ&&torsionQ,
-	If[ConnectionRelationsQ[covd]===True,ClearConnectionRelations[covd,Verbose->False]];
-	If[CurvatureRelationsQ[covd]===True,ClearCurvatureRelations[covd,Verbose->False]];res=DisformationToDistortion[ContorsionToDistortion[TorsionToDistortion[NonMetricityToDistortion[ChangeCovD[ChangeCurvature[ToRiemann[WeylToRiemann[exp],covd],covd,covdmetric],covd,covdmetric],covd,metric],covd,metric],covd,metric],covd,metric]
+If[conQ,ClearConnectionRelations[covd,Verbose->False];ConnectionRelationsQ[covd]=False];
+If[curvQ,ClearCurvatureRelations[covd,Verbose->False],CurvatureRelationsQ[covd]=False];
+If[nmQ&&torsionQ,	res=DisformationToDistortion[ContorsionToDistortion[TorsionToDistortion[NonMetricityToDistortion[ChangeCovD[ChangeCurvature[ToRiemann[WeylToRiemann[exp,covd],covd],covd,covdmetric],covd,covdmetric],covd,metric],covd,metric],covd,metric],covd,metric]
 ];
 If[!nmQ&&torsionQ,
-	If[ConnectionRelationsQ[covd]===True,ClearConnectionRelations[covd,Verbose->False]];
-	If[CurvatureRelationsQ[covd]===True,ClearCurvatureRelations[covd,Verbose->False]];
 res=NoScalar[TorsionToDistortion[ChangeCovD[ChangeCurvature[ToRiemann[exp,covd],covd,covdmetric],covd,covdmetric],covd,metric]]
 ];
 If[nmQ&&!torsionQ,
-	If[ConnectionRelationsQ[covd]===True,ClearConnectionRelations[covd,Verbose->False]];
-	If[CurvatureRelationsQ[covd]===True,ClearCurvatureRelations[covd,Verbose->False]];
 res=NonMetricityToDistortion[ChangeCovD[ChangeCurvature[ToRiemann[exp,covd],covd,covdmetric],covd,covdmetric],covd,metric]
 ];
-SetCurvatureRelations[covd,Verbose->False];
+If[curvQ,SetCurvatureRelations[covd,Verbose->False];CurvatureRelationsQ[covd]=True];
+If[conQ,SetConnectionRelations[covd,Verbose->False];ConnectionRelationsQ[covd]=True];
 Return[res,Module]
 ]
 ]
 
 
 (* ::Input::Initialization:: *)
-ToDistortion[exp_,covd_?CovDQ]:=If[LeviCivitaQ[covd],exp,ToDistortion[exp,covd,MasterOf[covd]]];
-(** listable **)
+ToDistortion[exp_,covd_?CovDQ]:=If[(!xTensorQ[GiveSymbol[Contorsion,covd]]&&!xTensorQ[GiveSymbol[Disformation,covd]]),exp,ToDistortion[exp,covd,MasterOf[covd]]];
 ToDistortion[exp_]:=ToDistortion[exp,$CovDs];
 ToDistortion[expr_,list_List]:=Fold[ToDistortion,expr,list];
 ToDistortion[exp_,PD,_Symbol]:=exp;
 
 
 (* ::Input::Initialization:: *)
-Traceless::already="The tensor `1` is already traceless.";
-Traceless::alreadydef="Traceless tensor of `1` is already defined";
-TraceDecomposition::TraceDecomposition="Defining the rules TraceDecomposition[`1`].";
-TraceDecomposition::TraceDecompose="Defining the rule TraceDecompose[`1`].";
-Traceless::Traceless="Defining the rule TracelessRule[`1`].";
+ToContorsion[exp_,covd_?(NonMetricityQ[#]&&TorsionQ[#]&),metric_?MetricQ]:=Module[
+{indices = GetIndicesOfVBundle[VBundleOfMetric[metric],3],rule},
+If[!xTensorQ[GiveSymbol[Distortion,covd]],Return[exp,Module]];
+With[{a= indices[[1]],b= indices[[2]],c= indices[[3]],
+	distortion=GiveSymbol[Distortion,covd],
+	disformation=GiveSymbol[Disformation,covd],
+	contorsion= GiveSymbol[Contorsion,covd]
+	},
+rule=MakeRule[{distortion[a,-b,-c],contorsion[a,-b,-c]+disformation[a,-b,-c]}];
+exp/.rule]];
+ToContorsion[exp_,covd_?CovDQ,metric_?MetricQ]:=If[(MetricOfCovD[covd]=!=Null&&!TorsionQ[covd])||(MetricOfCovD[covd]===Null&&(!xTensorQ[GiveSymbol[Contorsion,covd]]||!xTensorQ[GiveSymbol[Disformation,covd]]))||!TorsionQ[covd],exp,If[TorsionQ[covd]&&!NonMetricityQ[covd],ToDistortion[exp,covd,metric]]];
+ToContorsion[exp_,covd_?CovDQ]:=If[MasterOf[covd]=!=Null,ToContorsion[exp,covd,MasterOf[covd]],exp];
+ToContorsion[exp_]:=ToContorsion[exp,$CovDs];
+ToContorsion[expr_,list_List]:=Fold[ToContorsion,expr,list];
+ToContorsion[exp_,PD,_Symbol]:=exp;
 
 
 (* ::Input::Initialization:: *)
-ToTracelessTensor[tensor_?xTensorQ,inds___List,f___Integer,metric_?MetricQ]:=Module[{deg=Length@inds,projector,manifold=Sequence@@DependenciesOfTensor[metric],newinds,indices = GetIndicesOfVBundle[VBundleOfMetric[metric],2],rule2},
-With[{invmetric=Inv@metric,a= indices[[1]],b= indices[[2]]},
-newinds=DownIndex/@Take[IndicesOfVBundle[TangentBundleOfManifold[manifold]][[1]],Length[inds]];
-projector=TracelessProjector[deg,f,metric];
-CollectTensors[ChangeFreeIndices[SameDummies[Map[ContractMetric[#,metric]&,(tensor@@newinds*projector//Distribute)]]//SeparateMetric,inds],{CollectMethod->SafeCanonical}]
-]];
-ToTracelessTensor[tensor_?xTensorQ,inds___List,f___Integer]:=If[MetricOfTensor[tensor]=!={},ToTracelessTensor[tensor,inds,f,MetricOfTensor[tensor]],ToTracelessTensor[tensor,inds,f,$Metrics[[1]]]];
-ToTracelessTensor[tensor_?xTensorQ,inds___List]:=ToTracelessTensor[tensor,inds,1];
-ToTracelessTensor[tensor_,f___Integer,metric_?MetricQ]:=ToTracelessTensor[Head@tensor,List@@tensor,f,metric];
-ToTracelessTensor[tensor_,f___Integer]:=If[MetricOfTensor[tensor]=!={},ToTracelessTensor[Head@tensor,List@@tensor,f,MetricOfTensor[tensor]],ToTracelessTensor[Head@tensor,List@@tensor,f,$Metrics[[1]]]];
-ToTracelessTensor[tensor_,metric_?MetricQ]:=ToTracelessTensor[Head@tensor,List@@tensor,1,metric];
-ToTracelessTensor[tensor_]:=If[MetricOfTensor[tensor]=!={},ToTracelessTensor[Head@tensor,List@@tensor,1,MetricOfTensor[tensor]],ToTracelessTensor[Head@tensor,List@@tensor,1,$Metrics[[1]]]];
-
-
-(* ::Input::Initialization:: *)
-ToTraceTensor[tensor_?xTensorQ,inds___List,f___Integer,metric_?MetricQ]:=Module[{deg=Length@inds,projector,manifold=Sequence@@DependenciesOfTensor[metric],newinds},
-newinds=DownIndex/@Take[IndicesOfVBundle[TangentBundleOfManifold[manifold]][[1]],Length[inds]];
-projector=(BrauerToTensor[TraceProjector[deg,f],metric])/.dtrace->DimOfManifold[manifold];
-With[{invmetric=Inv@metric},
-CollectTensors[ChangeFreeIndices[SameDummies[Map[ContractMetric[#,metric]&,(tensor@@newinds*projector//Distribute)]],inds],{CollectMethod->SafeCanonical}]
-]
-];
-ToTraceTensor[tensor_?xTensorQ,inds___List,f___Integer]:=If[MetricOfTensor[tensor]=!={},ToTraceTensor[tensor,inds,f,MetricOfTensor[tensor]],ToTraceTensor[tensor,inds,f,$Metrics[[1]]]];
-ToTraceTensor[tensor_?xTensorQ,inds___List]:=ToTraceTensor[tensor,inds,1];
-ToTraceTensor[tensor_,f___Integer,metric_?MetricQ]:=ToTraceTensor[Head@tensor,List@@tensor,f,metric];
-ToTraceTensor[tensor_,f___Integer]:=If[MetricOfTensor[tensor]=!={},ToTraceTensor[Head@tensor,List@@tensor,f,MetricOfTensor[tensor]],ToTraceTensor[Head@tensor,List@@tensor,f,$Metrics[[1]]]];
-ToTraceTensor[tensor_,metric_?MetricQ]:=ToTraceTensor[Head@tensor,List@@tensor,1,metric];
-ToTraceTensor[tensor_]:=If[MetricOfTensor[tensor]=!={},ToTraceTensor[Head@tensor,List@@tensor,1,MetricOfTensor[tensor]],ToTraceTensor[Head@tensor,List@@tensor,1,$Metrics[[1]]]];
-
-
-(* ::Input::Initialization:: *)
-TracelessRule[tensor_?xTensorQ]:={};
-
-
-(* ::Input::Initialization:: *)
-Options[DefTraceless]={
-DefInfo->{"rule",""}
-};
-DefTraceless[tensor_?xTensorQ,metric_?MetricQ,options:OptionsPattern[]]:=Module[{rank=Length@SlotsOfTensor@tensor,M=Sequence@@DependenciesOfTensor[tensor],tfQ,tftensor,boolindpos,inds,info},
-(** info **)
-{info}=OptionValue[{DefInfo}];
-(**********)
-boolindpos=Map[If[#===Tangent@M,False,True]&,SlotsOfTensor@tensor];
-inds=If[#[[2]],DownIndex[#[[1]]],#[[1]]]&/@Transpose[{IndicesOfVBundle[Tangent@M][[1]][[1;;rank]],boolindpos}];
-tfQ=TraceFreeQ[tensor@@inds];
-If[tfQ,Throw@Message[Traceless::already,tensor]];
-tftensor=ToExpression[StringJoin["TF",ToString[tensor]]];
-(***** Special cases : already defined traceless tensors ****)
-If[TensorID[tensor]=!={},
-If[TensorID[tensor][[1]]===Riemann,TracelessRule[tensor]=RiemannToWeylRules[TensorID[tensor][[2]]];
-Throw@Message[Traceless::alreadydef,tensor]];
-If[TensorID[tensor][[1]]===Ricci,TracelessRule[tensor]=RicciToTFRicciRules[TensorID[tensor][[2]]];
-Throw@Message[Traceless::alreadydef,tensor]];
-If[TensorID[tensor][[1]]===CoRicci,TracelessRule[tensor]=CoRicciToTFCoRicciRules[TensorID[tensor][[2]]];
-Throw@Message[Traceless::alreadydef,tensor]];
-];
-DefTensor[tftensor@@inds,M,PrintAs->xMAGPrint[tensor,ToExpression["tf"]],TraceFree->inds,Master->metric];
-(** The rules **)
-If[xAct`xTensor`Private`FirstMetricQ[metric],
-If[TracelessRule[tensor]==={},
-xAct`xTensor`Private`MakeDefInfo[DefTraceless,"TracelessRule"<>"["<>ToString[tensor]<>"]",info];
-TracelessRule[tensor]=ToRule[tftensor@@inds==(ToTracelessTensor[tensor@@inds,1,metric])];],
-xAct`xTensor`Private`MakeDefInfo[DefTraceless,"TracelessRule"<>"["<>ToString[tensor]<>"]",info];
-If[TracelessRule[tensor]==={},TracelessRule[tensor]=SafeToRule[tftensor@@inds==(ToTracelessTensor[tensor@@inds,1,metric])];]
-]
-];
-DefTraceless[tensor_?xTensorQ,options:OptionsPattern[]]:=If[MetricOfTensor[tensor]=!={},DefTraceless[tensor,MetricOfTensor[tensor],options],DefTraceless[tensor,xAct`xTensor`Private`FirstMetricOfVBundle[Tangent@@DependenciesOfTensor[tensor]],options]];
-
-
-(* ::Input::Initialization:: *)
-UndefTraceless[tensor_?xTensorQ]:=Module[{tftensor},
-tftensor=ToExpression[StringJoin["TF",ToString[tensor]]];
-TracelessRule[tensor]=.;
-MasterOf[tftensor]^={};
-UndefTensor[tftensor];
-]
-
-
-(* ::Input::Initialization:: *)
-TraceDecompositionRules[tensor_?xTensorQ]:={};
-TraceDecompose[tensor_?xTensorQ]:={};
-
-
-(* ::Input::Initialization:: *)
-Options[DefTraceDecomposition]={
-DefInfo->{"rules",""}
-};
-DefTraceDecomposition[tensor_?xTensorQ,metric_?MetricQ,options:OptionsPattern[]]:=Module[{rank=Length@SlotsOfTensor@tensor,M=Sequence@@DependenciesOfTensor[tensor],tfQ,tftensor,boolindpos,inds,ntftensor,ttensor,info},
-(** info **)
-{info}=OptionValue[{DefInfo}];
-(**********)
-
-boolindpos=Map[If[#===Tangent@M,False,True]&,SlotsOfTensor@tensor];
-inds=If[#[[2]],DownIndex[#[[1]]],#[[1]]]&/@Transpose[{IndicesOfVBundle[Tangent@M][[1]][[1;;rank]],boolindpos}];
-tfQ=TraceFreeQ[tensor@@inds];
-If[tfQ,Throw@Message[Traceless::already,tftensor]];
-ntftensor=IntegerPart[rank/2];
-tftensor=ToExpression[StringJoin["TF",ToString[tensor]]];
-tftensor[1]=tftensor;
-tftensor[n_Integer/;n>1]:=GiveSymbol[tftensor,n];
-ttensor=ToExpression[StringJoin["T",ToString[tensor]]];
-If[TensorID[tensor]=!={}&&TensorID[tensor][[1]]===Riemann,tftensor[1]:=GiveSymbol[Weyl,TensorID[tensor][[2]]]];
-(*** Definition of f-traceless tensor ***)
-Map[If[!xTensorQ[tftensor[#]],If[#===1,DefTensor[tftensor[#]@@inds,M,PrintAs->xMAGPrint[tensor,ToExpression@"tf"]],DefTensor[tftensor[#]@@inds,M,PrintAs->xMAGPrint[tensor,ToExpression@StringJoin["tf",ToString[#]]],Master->metric]]]&,Range@ntftensor];
-DefTensor[ttensor@@inds,M,PrintAs->xMAGPrint[tensor,ToExpression@StringJoin["t"]],Master->metric];
-(** The rules **)
-If[xAct`xTensor`Private`FirstMetricQ[metric],
-TraceDecompositionRules[tensor]=Join[Flatten@Map[ToRule[tftensor[#]@@inds==(ToTracelessTensor[tensor@@inds,#,metric])]&,Range@ntftensor],ToRule[ttensor@@inds==(ToTraceTensor[tensor@@inds,ntftensor,metric])]];
-TraceDecompose[tensor]=ToRule[tensor@@inds==Plus@@(tftensor[#]@@inds&/@Range@ntftensor)+ttensor@@inds];
-(****** Message **********)
-xAct`xTensor`Private`MakeDefInfo[DefTraceDecomposition,"TraceDecompositionRules"<>"["<>ToString[tensor]<>"]",info];
-xAct`xTensor`Private`MakeDefInfo[DefTraceDecomposition,"TraceDecompose"<>"["<>ToString[tensor]<>"]",info];,
-TraceDecompositionRules[tensor]=Join[Flatten@Map[SafeToRule[tftensor[#]@@inds==(ToTracelessTensor[tensor@@inds,#,metric])]&,Range@ntftensor],SafeToRule[ttensor@@inds==(ToTraceTensor[tensor@@inds,ntftensor,metric])]];
-TraceDecompose[tensor]=SafeToRule[tensor@@inds==Plus@@(tftensor[#]@@inds&/@Range@ntftensor)+ttensor@@inds];
-(****** Message **********)
-xAct`xTensor`Private`MakeDefInfo[DefTraceDecomposition,"TraceDecompositionRules"<>"["<>ToString[tensor]<>"]",info];
-xAct`xTensor`Private`MakeDefInfo[DefTraceDecomposition,"TraceDecompose"<>"["<>ToString[tensor]<>"]",info];
-]
-];
-DefTraceDecomposition[tensor_?xTensorQ,options:OptionsPattern[]]:=If[MetricOfTensor[tensor]=!={},DefTraceDecomposition[tensor,MetricOfTensor[tensor],options],DefTraceDecomposition[tensor,xAct`xTensor`Private`FirstMetricOfVBundle[Tangent@@DependenciesOfTensor[tensor]],options]];
-
-
-(* ::Input::Initialization:: *)
-UndefTraceDecomposition[tensor_?xTensorQ]:=Module[{rank=Length@SlotsOfTensor@tensor,ntftensor,tftensor,ttensor},
-ntftensor=IntegerPart[rank/2];
-tftensor=ToExpression[StringJoin["TF",ToString[tensor]]];
-tftensor[1]=tftensor;
-tftensor[n_Integer/;n>1]:=GiveSymbol[tftensor,n];
-ttensor=ToExpression[StringJoin["T",ToString[tensor]]];
-If[TensorID[tensor]=!={}&&TensorID[tensor][[1]]===Riemann,
-Map[(MasterOf[tftensor[#]]^={})&,Range[2,ntftensor]];
-Map[UndefTensor[tftensor[#]]&,Range[2,ntftensor]],
-Map[(MasterOf[tftensor[#]]^={})&,Range@ntftensor];
-Map[UndefTensor[tftensor[#]]&,Range@ntftensor]
-];
-MasterOf[ttensor]^={};
-UndefTensor[ttensor];
-TraceDecompositionRules[tensor]:={};
-TraceDecompose[tensor]:={};
-]
+ToDisformation[exp_,covd_?(NonMetricityQ[#]&&TorsionQ[#]&),metric_?MetricQ]:=ToContorsion[exp,covd,metric];
+ToDisformation[exp_,covd_?CovDQ,metric_?MetricQ]:=If[(MetricOfCovD[covd]=!=Null)||(MetricOfCovD[covd]===Null&&!xTensorQ[GiveSymbol[Disformation,covd]]),exp,If[!TorsionQ[covd]&&NonMetricityQ[covd],ToDistortion[exp,covd,metric]]];
+ToDisformation[exp_,covd_?CovDQ]:=If[MasterOf[covd]=!=Null,ToDisformation[exp,covd,MasterOf[covd]],exp];
+ToDisformation[exp_]:=ToDisformation[exp,$CovDs];
+ToDisformation[expr_,list_List]:=Fold[ToDisformation,expr,list];
+ToDisformation[exp_,PD,_Symbol]:=exp;
 
 
 (* ::Input::Initialization:: *)
@@ -1792,12 +1788,12 @@ ToIRD[exp_,tensor_?xTensorQ,IRDMethod->method_]:=exp;
 
 
 (* ::Input::Initialization:: *)
-Options[DefIRD]:={IRDMethod->YoungProject,ManifestSymmetry->Antisymmetric}
+Options[DefIRD]:={IRDMethod->YoungProject,ManifestSym->Antisymmetric}
 Options[IRDMapping]:={IRDMethod->YoungProject}
 Options[IRDRules]:={IRDMethod->YoungProject}
 DefIRD[tensor_?xTensorQ,inds_List,indsmapping_List,options:OptionsPattern[]]:=Module[{deg=Length[inds],sdttab,ruleindex,indtabs,assotensor,M=Sequence@@DependenciesOfTensor[tensor],method,listtabtensor,manifsym,symtensor=SymmetryGroupOfTensor[tensor],maxsym,tfQ,tftensor,tensorSymbol},
 {method}=OptionValue[{DefIRD},{options},{IRDMethod}];
-{manifsym}=OptionValue[{DefIRD},{options},{ManifestSymmetry}];
+{manifsym}=OptionValue[{DefIRD},{options},{ManifestSym}];
 If[manifsym===Antisymmetric,
 sdttab=Reverse@StdTableaux[deg],sdttab=StdTableaux[deg]];
 ruleindex=MapThread[#1->#2&,{indsmapping,inds}];
@@ -1809,7 +1805,7 @@ tfQ=TraceFreeQ[tensor@@inds];
 If[tfQ,
 If[TensorID[tensor]=!={},tensorSymbol=TensorID[tensor][[1]],tensorSymbol=tensor];
 If[method===YoungProject,
-listtabtensor=Map[#->ToCanonical[YoungProject2[tensor@@inds,#,ManifestSymmetry->manifsym]]&,indtabs];
+listtabtensor=Map[#->ToCanonical[YoungProject2[tensor@@inds,#,ManifestSym->manifsym]]&,indtabs];
 listtabtensor=DeleteCases[listtabtensor,a_List->0];
 (** We delete antisymmetric part of Weyl because of bianchi identity **)
 If[TensorID[tensor][[1]]===Weyl&&LeviCivitaQ[TensorID[tensor][[2]]]&&manifsym===Antisymmetric,
@@ -1850,7 +1846,7 @@ If[!tfQ,
 If[xTensorQ[tftensor],
 If[TensorID[tftensor]=!={},tensorSymbol=TensorID[tftensor][[1]],tensorSymbol=tftensor];
 	If[method===YoungProject,
-	listtabtensor=Map[#->ToCanonical[YoungProject2[tftensor@@inds,#,ManifestSymmetry->manifsym]]&,indtabs];
+	listtabtensor=Map[#->ToCanonical[YoungProject2[tftensor@@inds,#,ManifestSym->manifsym]]&,indtabs];
 	listtabtensor=DeleteCases[listtabtensor,a_List->0];
 	(** We delete antisymmetric part of Riemann because of bianchi identity **)
 	If[TensorID[tensor][[1]]===Riemann&&LeviCivitaQ[TensorID[tensor][[2]]]&&manifsym===Antisymmetric,
@@ -1903,10 +1899,6 @@ DefIRD[tensorfunc_,options:OptionsPattern[]]:=DefIRD[Head@tensorfunc,List@@tenso
 
 
 (* ::Input::Initialization:: *)
-InducedMetricQ[metric_?MetricQ]:=If[InducedFrom[metric]===Null,False,True];
-
-
-(* ::Input::Initialization:: *)
 Options[StartInducedDecomposition]:={PrintAs->{"n","h"},SpaceLikeQ->True,Normalization->-1,InducedConnectionRelations->True,InducedCurvatureRelations->True,InducedProjectiveRelations->False}
 StartInducedDecomposition[metric_?MetricQ,covd_?CovDQ,symofcovds_List,{normalvector_Symbol,indmet_Symbol},Options:OptionsPattern[]]:=Module[{M=Sequence@@DependenciesOfTensor[metric],indices = GetIndicesOfVBundle[VBundleOfMetric[metric],4],indcovd=GiveSymbol[CovDOfMetric[metric],indmet],signdet,printas,slq,symbolindcovd=symofcovds[[1]],symbolcovd=symofcovds[[2]],norm,curvrQ,connectionrQ,projectiveQ},
 With[{i1= indices[[1]],i2= indices[[2]],i3= indices[[3]],i4= indices[[4]],acc=GiveSymbol[Acceleration,normalvector],covdmet=CovDOfMetric[metric],extrinsicmet=GiveSymbol[ExtrinsicK,indmet],vb=VBundleOfMetric[metric]},
@@ -1918,12 +1910,12 @@ DefTensor[normalvector[-i1],M];
 AutomaticRules[normalvector,MakeRule[{normalvector[i1]normalvector[-i1],norm}]];
 AutomaticRules[normalvector,MakeRule[{metric[-i1,-i2]normalvector[i1]normalvector[i2],norm}]];
 (****** Sign convention for Extrinsic curvature and Acceleration ***)
-$ExtrinsicKSign=-1;$AccelerationSign=-1;PrintAsCharacter[Extrinsic]="K";PrintAsCharacter[Acceleration]="a";
+$ExtrinsicKSign=-1;$AccelerationSign=-1;PrintAsCharacter[Extrinsic]="\[CapitalKappa]";PrintAsCharacter[Acceleration]="a";
 (******************** Definition of the induced metric and related function **************)
 If[slq,signdet=1,signdet=-1];
-DefMetric[signdet,indmet[-i1,-i2],indcovd,symbolindcovd,InducedFrom->{metric,normalvector},PrintAs->printas[[2]]];
+DefMetric[signdet,indmet[-i1,-i2],indcovd,symbolindcovd,InducedFrom->{metric,normalvector},PrintAs->printas[[2]],WeightedWithBasis->AIndex];
 indcovd[a_]@(f_?ScalarFunctionQ[args___]):=xAct`xTensor`Private`multiD[indcovd[a],f[args]];
-ToFunction[acc[-i2]==normalvector[i1]covdmet[-i1]@normalvector[-i2],AccelerationToGradNormal];
+ToFunction[acc[-i2]==normalvector[i1]covdmet[-i1]@normalvector[-i2],AccelerationToGradNormal,MetricOn->All];
 PrintAs[extrinsicmet]^=xMAGPrint[Extrinsic,indmet];
 (** Automatic Rule for the commutation of induced covariant derivative acting on the acceleration vector **)
 AutomaticRules[acc,{indcovd[-b_Symbol][acc[-a_Symbol]]:>indcovd[-a][acc[-b]]/;DisorderedPairQ[-a,-b]}];
@@ -1939,27 +1931,33 @@ projname[normalvector[i_?(EIndexQ&&Depth[#]>2&)]expr_.]:=0/;Not@IsIndexOf[expr,C
 Unprotect[LieD];
 LieD/:normalvector[-i_Symbol]LieD[normalvector[_Symbol]][expr_]:=-acc[-i]*expr/;xAct`xTensor`Private`HasOrthogonalIndexQ[expr,normalvector[-i]];
 Protect[LieD];
+With[{riemannh=GiveSymbol[Riemann,indcovd]},
+SlotsOfTensor[riemannh]^={-Tangent[M],-Tangent[M],-Tangent[M],Tangent[M]};
+]
 (*** Automatic rules for curvature tensors ***)
 With[{riemann=GiveSymbol[Riemann,covdmet],ricci=GiveSymbol[Ricci,covdmet],ricciscalar=GiveSymbol[RicciScalar,covdmet]},
 AutomaticRules[riemann,MakeRule[{normalvector[i1]*normalvector[i2]*riemann[-i1, -i2, -i3, i4],0}]]
 ];
-(****************************************************************************)
-(*** Definition of projected curvature tensors associated with the metric ***)
-(****************************************************************************)
+(*******************************************************************************************)
+(*** Definition and rules for the projected curvature tensors associated with the metric ***)
+(*******************************************************************************************)
 defCurvatureInducedComp[covdmet,indmet];
 covdmet/:InducedCurvatureRelations[covdmet,indmet,Projector]=RiemannToInducedrules[covdmet,indmet];
 covdmet/:InducedCurvatureRelations[covdmet,indmet,Gauss]=Gaussrule[covdmet,indmet];
 covdmet/:InducedCurvatureRelations[covdmet,indmet,Codazzi]=Codazzirules[covdmet,indmet];
 covdmet/:InducedCurvatureRelations[covdmet,indmet,Mainardi]=Mainardirules[covdmet,indmet];
 If[curvrQ,SetInducedCurvatureRelations[covdmet,indmet]];
-CurvatureDecompositionRules[covdmet]=curvaturedecompositionrules[covdmet,indmet];
-(************************************************************)
+RiemannDecompositionRules[covdmet]=curvaturedecompositionrules[covdmet,indmet];
+ToInducedCurvatureRules[covdmet,Riemann]=toInducedCurvatureRules[covdmet,indmet,Riemann];
+ToInducedCurvatureRules[covdmet,Ricci]=toInducedCurvatureRules[covdmet,indmet,Ricci];
+ToInducedCurvatureRules[covdmet,RicciScalar]=toInducedCurvatureRules[covdmet,indmet,RicciScalar];
+(****************************************************************)
 (*** Induced decomposition of the independent connection covd ***)
-(************************************************************)
+(****************************************************************)
 If[!SameQ[covd,CovDOfMetric[metric]],
-With[{indcovD=GiveSymbol[covd,indmet],torsionQ=TorsionQ[covd],distortion=GiveSymbol[Distortion,covd]},
+With[{indcovD=GiveSymbol[covd,indmet],torsionQ=TorsionQ[covd],nonmetricityQ=NonMetricityQ[covd,metric],distortion=GiveSymbol[Distortion,covd],disformation=GiveSymbol[Disformation,covd],contorsion=GiveSymbol[Contorsion,covd]},
 (*** Definition of induced covariant derivative associated with covd ***)
-DefCovD[indcovD[-i1],SymbolOfCovD->symbolcovd,Torsion->torsionQ,OrthogonalTo->{normalvector[i1]},ProjectedWith->{indmet[i1,-i2]},DefMAGTensors->indmet];
+DefCovD[indcovD[-i1],SymbolOfCovD->symbolcovd,Torsion->torsionQ,FromMetric->MetricOfCovD[covd],OrthogonalTo->{normalvector[i1]},ProjectedWith->{indmet[i1,-i2]},Master->indmet];
 ProjectDerivativeRules[indcovD]={indcovD[i_][expr_]:>If[IsIndexOf[expr,-i],
 With[{dummy=DummyAs[i]},metric[i,-dummy]projname[covd[dummy][expr]]],
 projname[covd[i][expr]]
@@ -1973,20 +1971,60 @@ covd/:InducedConnectionRelations[covd,indmet,Acceleration]=distortionInducedToAc
 If[connectionrQ,
 SetInducedConnectionRelations[covd,indmet]
 ];
-DistortionDecompositionRules[covd]=MakeRule[{distortion[i1,-i2,-i3],Evaluate[InducedDecomposition[distortion[i1,-i2,-i3],{indmet,normalvector}]//.InducedConnectionRelations[covd,indmet]]}];
+If[torsionQ&& nonmetricityQ,
+DistortionDecompositionRules[covd]=MakeRule[{distortion[i1,-i2,-i3],Evaluate[SafeCanonical[InducedDecomposition[distortion[i1,-i2,-i3],{indmet,normalvector}]]/.InducedConnectionRelations[covd,indmet,Projector]]}]
+];
+If[!torsionQ&& nonmetricityQ,
+DistortionDecompositionRules[covd]=MakeRule[{disformation[i1,-i2,-i3],Evaluate[SafeCanonical[InducedDecomposition[disformation[i1,-i2,-i3],{indmet,normalvector}]]/.InducedConnectionRelations[covd,indmet,Projector]]}]
+];
+If[torsionQ&&!nonmetricityQ,
+DistortionDecompositionRules[covd]=MakeRule[{contorsion[i1,-i2,-i3],Evaluate[SafeCanonical[InducedDecomposition[contorsion[i1,-i2,-i3],{indmet,normalvector}]]]}]
+];
 (*** Definition of projected curvature tensors associated with covd ***)
 defCurvatureInducedComp[covd,indmet];
+If[nonmetricityQ&&!torsionQ,
 covd/:InducedCurvatureRelations[covd,indmet,Projector]=RiemannToInducedrules[covd,indmet];
 covd/:InducedCurvatureRelations[covd,indmet,Gauss]=Gaussrule[covd,indmet];
 covd/:InducedCurvatureRelations[covd,indmet,Codazzi]=Codazzirules[covd,indmet];
 covd/:InducedCurvatureRelations[covd,indmet,Mainardi]=Mainardirules[covd,indmet];
 covd/:InducedCurvatureRelations[covd,indmet,Affine]=Affinerules[covd,indmet];
 If[curvrQ,SetInducedCurvatureRelations[covd,indmet]];
-CurvatureDecompositionRules[covd]=curvaturedecompositionrules[covd,indmet];
+RiemannDecompositionRules[covd]=curvaturedecompositionrules[covd,indmet];
+ToInducedCurvatureRules[covd,Riemann]=toInducedCurvatureRules[covd,indmet,Riemann];
+ToInducedCurvatureRules[covd,Ricci]=toInducedCurvatureRules[covd,indmet,Ricci];
+ToInducedCurvatureRules[covd,CoRicci]=toInducedCurvatureRules[covd,indmet,CoRicci];
+ToInducedCurvatureRules[covd,RicciScalar]=toInducedCurvatureRules[covd,indmet,RicciScalar];
+];
+If[!nonmetricityQ&&torsionQ,
+covd/:InducedCurvatureRelations[covd,indmet,Projector]=RiemannToInducedrules[covd,indmet];
+covd/:InducedCurvatureRelations[covd,indmet,Gauss]=Gaussrule[covd,indmet];
+covd/:InducedCurvatureRelations[covd,indmet,Codazzi]=Codazzirules[covd,indmet];
+covd/:InducedCurvatureRelations[covd,indmet,Mainardi]=Mainardirules[covd,indmet];
+covd/:InducedCurvatureRelations[covd,indmet,Affine]=Affinerules[covd,indmet];
+If[curvrQ,SetInducedCurvatureRelations[covd,indmet]];
+RiemannDecompositionRules[covd]=curvaturedecompositionrules[covd,indmet];
+ToInducedCurvatureRules[covd,Riemann]=toInducedCurvatureRules[covd,indmet,Riemann];
+ToInducedCurvatureRules[covd,Ricci]=toInducedCurvatureRules[covd,indmet,Ricci];
+ToInducedCurvatureRules[covd,RicciScalar]=toInducedCurvatureRules[covd,indmet,RicciScalar];
+];
+If[nonmetricityQ&&torsionQ,
+covd/:InducedCurvatureRelations[covd,indmet,Projector]=RiemannToInducedrules[covd,indmet];
+covd/:InducedCurvatureRelations[covd,indmet,Gauss]=Gaussrule[covd,indmet];
+covd/:InducedCurvatureRelations[covd,indmet,Codazzi]=Codazzirules[covd,indmet];
+covd/:InducedCurvatureRelations[covd,indmet,Mainardi]=Mainardirules[covd,indmet];
+covd/:InducedCurvatureRelations[covd,indmet,Affine]=Affinerules[covd,indmet];
+If[curvrQ,SetInducedCurvatureRelations[covd,indmet]];
+RiemannDecompositionRules[covd]=curvaturedecompositionrules[covd,indmet];
+ToInducedCurvatureRules[covd,Riemann]=toInducedCurvatureRules[covd,indmet,Riemann];
+ToInducedCurvatureRules[covd,Ricci]=toInducedCurvatureRules[covd,indmet,Ricci];
+ToInducedCurvatureRules[covd,CoRicci]=toInducedCurvatureRules[covd,indmet,CoRicci];
+ToInducedCurvatureRules[covd,Homothetic]=toInducedCurvatureRules[covd,indmet,Homothetic];
+ToInducedCurvatureRules[covd,RicciScalar]=toInducedCurvatureRules[covd,indmet,RicciScalar];
 (***** Projective Invariant variables for the distortion tensor ***)
 defProjectiveVariables[covd,indmet];
 covd/:InducedProjectiveRelations[covd,indmet]=projectiveVariablesRules[covd,indmet];
-If[projectiveQ,SetInducedProjectiveRelations[covd,indmet],covd/:InducedProjectiveRelationsQ[covd,indmet]:=False];
+If[projectiveQ,SetInducedProjectiveRelations[covd,indmet],covd/:InducedProjectiveRelationsQ[covd,indmet]:=False]
+];
 ]
 ]
 ]
@@ -2074,12 +2112,26 @@ cd/: InducedProjectiveRelationsQ[cd,indmet]:=True;
 (* ::Input::Initialization:: *)
 ProjectDerivativeRules[_]:={};
 DistortionDecompositionRules[_]:={};
-CurvatureDecompositionRules[_]:={};
+RiemannDecompositionRules[_]:={};
+
+ToInducedCurvatureRules[_,Riemann]:={};
+ToInducedCurvatureRules[_,Ricci]:={};
+ToInducedCurvatureRules[_,CoRicci]:={};
+ToInducedCurvatureRules[_,Homothetic]:={};
+ToInducedCurvatureRules[_,RicciScalar]:={};
+ToInducedCurvatureRules[_,Riemann]:={};
+ToInducedCurvatureRules[_,Ricci]:={};
+ToInducedCurvatureRules[_,CoRicci]:={};
+ToInducedCurvatureRules[_,Homothetic]:={};
+ToInducedCurvatureRules[_,RicciScalar]:={};
+ToInducedCurvatureRules[covd_?NonMetricityQ]:=Join[ToInducedCurvatureRules[covd,Riemann],ToInducedCurvatureRules[covd,Ricci],ToInducedCurvatureRules[covd,CoRicci],ToInducedCurvatureRules[covd,Homothetic],ToInducedCurvatureRules[covd,RicciScalar]];
+ToInducedCurvatureRules[covd_?CovDQ]:=Join[ToInducedCurvatureRules[covd,Riemann],ToInducedCurvatureRules[covd,Ricci],ToInducedCurvatureRules[covd,RicciScalar]];
+ToInducedCurvatureRules[_]:={};
 
 
 (* ::Input::Initialization:: *)
 deflistablexTensorxMAGCovDs[ProjectDerivative];
-xAct`xTensor`Private`deflistableCovDs/@{DistortionDecomposition,CurvatureDecomposition};
+xAct`xTensor`Private`deflistableCovDs/@{DistortionDecomposition,RiemannDecomposition,ToInducedCurvature};
 
 
 (* ::Input::Initialization:: *)
@@ -2103,7 +2155,26 @@ j1= indices[[5]],
 j2= indices[[6]],
 j3= indices[[7]],
 j4= indices[[8]],
-tm=TangentBundleOfManifold[M],
+tm=TangentBundleOfManifold[M]
+},
+If[lvQ,
+With[{
+Rhhhh=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,indmetric],
+Rhhhn=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,nv],
+Rhnhn=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,nv]
+},
+Set[CovDTensorQ[#],True]&/@{Rhhhh,Rhhhn,Rhnhn};
+PrintAsCharacter[Rhhhh]=xMAGPrint[Riemann,indmetric];
+PrintAsCharacter[Rhhhn]=xMAGPrint[N,indmetric];
+PrintAsCharacter[Rhnhn]=xMAGPrint[O,indmetric];
+DefTensor[Rhhhh[-i1,-i2,-i3,i4],M,RiemannSymmetric[{1,2,3,4}],ForceSymmetries->True,OrthogonalTo->{nv[i1],nv[i2],nv[i3],nv[-i4]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2],indmetric[i3,-j3],indmetric[-i4,j4]},PrintAs->GiveOutputString[Rhhhh,covd]];
+DefTensor[Rhhhn[-i1,-i2,-i3],M,Antisymmetric[{-i1,-i2}],OrthogonalTo->{nv[i1],nv[i2],nv[i3]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2],indmetric[i3,-j3]},PrintAs->GiveOutputString[Rhhhn,covd]];
+DefTensor[Rhnhn[-i1,-i2],M,Symmetric[{-i1,-i2}],OrthogonalTo->{nv[i1],nv[i2]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2]},PrintAs->GiveOutputString[Rhnhn,covd]]
+]
+];
+(****** Connection with Non Metricity and no Torsion **********)
+If[!torsionQ&&nonmetricityQ,
+With[{
 Rhhhh=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,indmetric],
 Rhhhn=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,nv],
 Rhhnh=GiveSymbol[Riemann,covd,indmetric,indmetric,nv,indmetric],
@@ -2113,16 +2184,6 @@ Rhnnh=GiveSymbol[Riemann,covd,indmetric,nv,nv,indmetric],
 Rhhnn=GiveSymbol[Riemann,covd,indmetric,indmetric,nv,nv],
 Rhnnn=GiveSymbol[Riemann,covd,indmetric,nv,nv,nv]
 },
-If[lvQ,
-Set[CovDTensorQ[#],True]&/@{Rhhhh,Rhhhn,Rhnhn};
-PrintAsCharacter[Rhhhh]=xMAGPrint[Riemann,indmetric];
-PrintAsCharacter[Rhhhn]=xMAGPrint[N,indmetric];
-PrintAsCharacter[Rhnhn]=xMAGPrint[O,indmetric];
-DefTensor[Rhhhh[-i1,-i2,-i3,i4],M,RiemannSymmetric[{1,2,3,4}],ForceSymmetries->True,OrthogonalTo->{nv[i1],nv[i2],nv[i3],nv[-i4]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2],indmetric[i3,-j3],indmetric[-i4,j4]},PrintAs->GiveOutputString[Rhhhh,covd]];
-DefTensor[Rhhhn[-i1,-i2,-i3],M,Antisymmetric[{-i1,-i2}],OrthogonalTo->{nv[i1],nv[i2],nv[i3]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2],indmetric[i3,-j3]},PrintAs->GiveOutputString[Rhhhn,covd]];
-DefTensor[Rhnhn[-i1,-i2],M,Symmetric[{-i1,-i2}],OrthogonalTo->{nv[i1],nv[i2]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2]},PrintAs->GiveOutputString[Rhnhn,covd]]
-];
-If[torsionQ&&nonmetricityQ,
 Set[CovDTensorQ[#],True]&/@{Rhhhh,Rhhhn,Rhhnh,Rhnhh,Rhnhn,Rhnnh,Rhhnn,Rhnnn};
 PrintAsCharacter[Rhhhh]=xMAGPrint[Riemann,indmetric];
 PrintAsCharacter[Rhhhn]=xMAGPrint[N,1];
@@ -2140,6 +2201,59 @@ DefTensor[Rhnhn[-i1,-i2],M,OrthogonalTo->{nv[i1],nv[i2]},ProjectedWith->{indmetr
 DefTensor[Rhnnh[-i1,i2],M,OrthogonalTo->{nv[i1],nv[-i2]},ProjectedWith->{indmetric[i1,-j1],indmetric[-i2,j2]},PrintAs->GiveOutputString[Rhnnh,covd]];
 DefTensor[Rhhnn[-i1,-i2],M,OrthogonalTo->{nv[i1],nv[i2]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2]},PrintAs->GiveOutputString[Rhhnn,covd]];
 DefTensor[Rhnnn[-i1],M,OrthogonalTo->{nv[i1]},ProjectedWith->{indmetric[i1,-j1]},PrintAs->GiveOutputString[Rhnnn,covd]]
+]
+];
+
+(****** Connection with Torsion and no non-metricity **********)
+If[torsionQ&&!nonmetricityQ,
+With[{
+Rhhhh=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,indmetric],
+Rhhhn=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,nv],
+Rhnhh=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,indmetric],
+Rhnhn=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,nv]
+},
+Set[CovDTensorQ[#],True]&/@{Rhhhh,Rhhhn,Rhhnh,Rhnhh,Rhnhn,Rhnnh,Rhhnn,Rhnnn};
+PrintAsCharacter[Rhhhh]=xMAGPrint[Riemann,indmetric];
+PrintAsCharacter[Rhhhn]=xMAGPrint[N,1];
+PrintAsCharacter[Rhnhh]=xMAGPrint[N,2];
+PrintAsCharacter[Rhnhn]=xMAGPrint[O,indmetric];
+DefTensor[Rhhhh[-i1,-i2,-i3,i4],M,Antisymmetric[{1,2}],ForceSymmetries->True,OrthogonalTo->{nv[i1],nv[i2],nv[i3],nv[-i4]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2],indmetric[i3,-j3],indmetric[-i4,j4]},PrintAs->GiveOutputString[Rhhhh,covd]];
+DefTensor[Rhhhn[-i1,-i2,-i3],M,Antisymmetric[{-i1,-i2}],OrthogonalTo->{nv[i1],nv[i2],nv[i3]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2],indmetric[i3,-j3]},PrintAs->GiveOutputString[Rhhhn,covd]];
+DefTensor[Rhnhh[-i1,-i2,-i3],M,OrthogonalTo->{nv[i1],nv[i2],nv[i3]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2],indmetric[i3,-j3]},PrintAs->GiveOutputString[Rhnhh,covd]];
+DefTensor[Rhnhn[-i1,-i2],M,OrthogonalTo->{nv[i1],nv[i2]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2]},PrintAs->GiveOutputString[Rhnhn,covd]]
+]
+];
+
+(****** Connection with Non Metricity and Torsion **********)
+If[torsionQ&&nonmetricityQ,
+With[{
+Rhhhh=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,indmetric],
+Rhhhn=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,nv],
+Rhhnh=GiveSymbol[Riemann,covd,indmetric,indmetric,nv,indmetric],
+Rhnhh=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,indmetric],
+Rhnhn=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,nv],
+Rhnnh=GiveSymbol[Riemann,covd,indmetric,nv,nv,indmetric],
+Rhhnn=GiveSymbol[Riemann,covd,indmetric,indmetric,nv,nv],
+Rhnnn=GiveSymbol[Riemann,covd,indmetric,nv,nv,nv]
+},
+Set[CovDTensorQ[#],True]&/@{Rhhhh,Rhhhn,Rhhnh,Rhnhh,Rhnhn,Rhnnh,Rhhnn,Rhnnn};
+PrintAsCharacter[Rhhhh]=xMAGPrint[Riemann,indmetric];
+PrintAsCharacter[Rhhhn]=xMAGPrint[N,1];
+PrintAsCharacter[Rhhnh]=xMAGPrint[N,3];
+PrintAsCharacter[Rhnhh]=xMAGPrint[N,2];
+PrintAsCharacter[Rhnhn]=xMAGPrint[O,1];
+PrintAsCharacter[Rhnnh]=xMAGPrint[O,3];
+PrintAsCharacter[Rhhnn]=xMAGPrint[O,2];
+PrintAsCharacter[Rhnnn]="A";
+DefTensor[Rhhhh[-i1,-i2,-i3,i4],M,Antisymmetric[{1,2}],ForceSymmetries->True,OrthogonalTo->{nv[i1],nv[i2],nv[i3],nv[-i4]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2],indmetric[i3,-j3],indmetric[-i4,j4]},PrintAs->GiveOutputString[Rhhhh,covd]];
+DefTensor[Rhhhn[-i1,-i2,-i3],M,Antisymmetric[{-i1,-i2}],OrthogonalTo->{nv[i1],nv[i2],nv[i3]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2],indmetric[i3,-j3]},PrintAs->GiveOutputString[Rhhhn,covd]];
+DefTensor[Rhhnh[-i1,-i2,-i3],M,Antisymmetric[{-i1,-i2}],OrthogonalTo->{nv[i1],nv[i2],nv[i3]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2],indmetric[i3,-j3]},PrintAs->GiveOutputString[Rhhnh,covd]];
+DefTensor[Rhnhh[-i1,-i2,-i3],M,OrthogonalTo->{nv[i1],nv[i2],nv[i3]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2],indmetric[i3,-j3]},PrintAs->GiveOutputString[Rhnhh,covd]];
+DefTensor[Rhnhn[-i1,-i2],M,OrthogonalTo->{nv[i1],nv[i2]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2]},PrintAs->GiveOutputString[Rhnhn,covd]];
+DefTensor[Rhnnh[-i1,i2],M,OrthogonalTo->{nv[i1],nv[-i2]},ProjectedWith->{indmetric[i1,-j1],indmetric[-i2,j2]},PrintAs->GiveOutputString[Rhnnh,covd]];
+DefTensor[Rhhnn[-i1,-i2],M,OrthogonalTo->{nv[i1],nv[i2]},ProjectedWith->{indmetric[i1,-j1],indmetric[i2,-j2]},PrintAs->GiveOutputString[Rhhnn,covd]];
+DefTensor[Rhnnn[-i1],M,OrthogonalTo->{nv[i1]},ProjectedWith->{indmetric[i1,-j1]},PrintAs->GiveOutputString[Rhnnn,covd]]
+]
 ]
 ]
 ];
@@ -2176,7 +2290,43 @@ c= indices[[3]],
 d= indices[[4]],
 i= indices[[5]],
 j= indices[[6]],
-tm=TangentBundleOfManifold[M],
+tm=TangentBundleOfManifold[M]
+},
+(****** Connection with Non Metricity and zero Torsion **********)
+If[nonmetricityQ && !torsionQ,
+With[{
+Dnhh=GiveSymbol[Disformation,covd,nv,indmetric,indmetric],
+Dhnh=GiveSymbol[Disformation,covd,indmetric,nv,indmetric],
+Dnhn=GiveSymbol[Disformation,covd,nv,indmetric,nv],
+Dhnn=GiveSymbol[Disformation,covd,indmetric,nv,nv],
+Dnnn=GiveSymbol[Disformation,covd,nv,nv,nv],
+disformation=GiveSymbol[Disformation,covd]
+},
+DefTensor[Dnhh[-a,-b],M,OrthogonalTo->{nv[a],nv[b]},ProjectedWith->{indmetric[a,-d],indmetric[b,-i]},PrintAs->xMAGPrint[Disformation,1]];
+DefTensor[Dhnh[a,-b],M,OrthogonalTo->{nv[-a],nv[b]},ProjectedWith->{indmetric[-a,d],indmetric[b,-i]},PrintAs->xMAGPrint[Disformation,2]];
+DefTensor[Dhnn[a],M,OrthogonalTo->{nv[-a]},ProjectedWith->{indmetric[-a,d]},PrintAs->xMAGPrint[Disformation,1]];
+DefTensor[Dnhn[-a],M,OrthogonalTo->{nv[a]},ProjectedWith->{indmetric[a,-d]},PrintAs->xMAGPrint[Disformation,2]];
+DefTensor[Dnnn[],M,PrintAs->xMAGPrint[Disformation,Null,nv]];
+]];
+
+
+(****** Connection with Torsion and zero Non Metricity **********)
+
+If[torsionQ&&!nonmetricityQ,
+With[{
+Knhh=GiveSymbol[Contorsion,covd,nv,indmetric,indmetric],
+Khnh=GiveSymbol[Contorsion,covd,indmetric,nv,indmetric],
+Khnn=GiveSymbol[Contorsion,covd,indmetric,nv,nv],
+contorsion=GiveSymbol[Contorsion,covd]
+},
+DefTensor[Knhh[-a,-b],M,OrthogonalTo->{nv[a],nv[b]},ProjectedWith->{indmetric[a,-d],indmetric[b,-i]},PrintAs->xMAGPrint[Contorsion,1]];
+DefTensor[Khnh[a,-b],M,OrthogonalTo->{nv[-a],nv[b]},ProjectedWith->{indmetric[-a,d],indmetric[b,-i]},PrintAs->xMAGPrint[Contorsion,2]];
+DefTensor[Khnn[-a],M,OrthogonalTo->{nv[a]},ProjectedWith->{indmetric[a,-d]},PrintAs->xMAGPrint[Contorsion,2]];
+]];
+
+(****** Connection with Non Metricity and Torsion **********)
+If[torsionQ&&nonmetricityQ,
+With[{
 Chhn=GiveSymbol[Distortion,covd,indmetric,indmetric,nv],
 Chnh=GiveSymbol[Distortion,covd,indmetric,nv,indmetric],
 Cnhh=GiveSymbol[Distortion,covd,nv,indmetric,indmetric],
@@ -2184,18 +2334,16 @@ Cnnh=GiveSymbol[Distortion,covd,nv,nv,indmetric],
 Cnhn=GiveSymbol[Distortion,covd,nv,indmetric,nv],
 Chnn=GiveSymbol[Distortion,covd,indmetric,nv,nv],
 Cnnn=GiveSymbol[Distortion,covd,nv,nv,nv],
-ChhnQ=xTensorQ@Chhn,
 distortion=GiveSymbol[Distortion,covd]
 },
-If[torsionQ&&nonmetricityQ,
-DefTensor[Chhn[a,-b],M,OrthogonalTo->{nv[-a],nv[b]},ProjectedWith->{indmetric[-a,d],indmetric[b,-i]},PrintAs->xMAGPrint[Distortion,3,nv]];
-DefTensor[Chnh[a,-b],M,OrthogonalTo->{nv[-a],nv[b]},ProjectedWith->{indmetric[-a,d],indmetric[b,-i]},PrintAs->xMAGPrint[Distortion,2,nv]];
-DefTensor[Cnhh[-a,-b],M,OrthogonalTo->{nv[a],nv[b]},ProjectedWith->{indmetric[a,-d],indmetric[b,-i]},PrintAs->xMAGPrint[Distortion,1,nv]];
-DefTensor[Cnnh[-a],M,OrthogonalTo->{nv[a]},ProjectedWith->{indmetric[a,-d]},PrintAs->xMAGPrint[Distortion,3,indmetric]];
-DefTensor[Cnhn[-a],M,OrthogonalTo->{nv[a]},ProjectedWith->{indmetric[a,-d]},PrintAs->xMAGPrint[Distortion,2,indmetric]];
-DefTensor[Chnn[a],M,OrthogonalTo->{nv[-a]},ProjectedWith->{indmetric[-a,d]},PrintAs->xMAGPrint[Distortion,1,indmetric]];
+DefTensor[Cnhh[-a,-b],M,OrthogonalTo->{nv[a],nv[b]},ProjectedWith->{indmetric[a,-d],indmetric[b,-i]},PrintAs->xMAGPrint[Distortion,1]];
+DefTensor[Chnh[a,-b],M,OrthogonalTo->{nv[-a],nv[b]},ProjectedWith->{indmetric[-a,d],indmetric[b,-i]},PrintAs->xMAGPrint[Distortion,2]];
+DefTensor[Chhn[a,-b],M,OrthogonalTo->{nv[-a],nv[b]},ProjectedWith->{indmetric[-a,d],indmetric[b,-i]},PrintAs->xMAGPrint[Distortion,3]];
+DefTensor[Chnn[a],M,OrthogonalTo->{nv[-a]},ProjectedWith->{indmetric[-a,d]},PrintAs->xMAGPrint[Distortion,1]];
+DefTensor[Cnhn[-a],M,OrthogonalTo->{nv[a]},ProjectedWith->{indmetric[a,-d]},PrintAs->xMAGPrint[Distortion,2]];
+DefTensor[Cnnh[-a],M,OrthogonalTo->{nv[a]},ProjectedWith->{indmetric[a,-d]},PrintAs->xMAGPrint[Distortion,3]];
 DefTensor[Cnnn[],M,PrintAs->xMAGPrint[Distortion,Null,nv]];
-]
+]]
 ]
 ];
 
@@ -2213,14 +2361,31 @@ With[{torsionQ=TorsionQ[covd],
 	b= indices[[2]],
 	d= indices[[3]],
 	i= indices[[4]],
-	nv=Part[InducedFrom[indmetric],2],
-	extrinsic1=GiveSymbol[Extrinsic,1,covd],
-	extrinsic3=GiveSymbol[Extrinsic,3,covd]
+	nv=Part[InducedFrom[indmetric],2]
 	},
+
+	(****** Connection with Non Metricity and  zero Torsion **********)
+	If[nonmetricityQ&&!torsionQ,
+	With[{extrinsic1=GiveSymbol[Extrinsic,1,covd],
+	extrinsic2=GiveSymbol[Extrinsic,2,covd]},
+	DefTensor[extrinsic1[-a,-b],M,OrthogonalTo->{nv[a],nv[b]},ProjectedWith->{indmetric[a,-d],indmetric[b,-i]},PrintAs->xMAGPrint[Extrinsic,1]];
+	DefTensor[extrinsic2[-a,-b],M,OrthogonalTo->{nv[a],nv[b]},ProjectedWith->{indmetric[a,-d],indmetric[b,-i]},PrintAs->xMAGPrint[Extrinsic,2]]
+	]];
+
+	(****** Connection with Torsion and zero Non metricity **********)
+	If[!nonmetricityQ&&torsionQ,
+	With[{extrinsic1=GiveSymbol[Extrinsic,1,covd]},
+	DefTensor[extrinsic1[-a,-b],M,OrthogonalTo->{nv[a],nv[b]},ProjectedWith->{indmetric[a,-d],indmetric[b,-i]},PrintAs->xMAGPrint[Extrinsic,1]];
+	]
+	];
+
+	(****** Connection with Non Metricity and Torsion **********)
 	If[nonmetricityQ&&torsionQ,
+	With[{extrinsic1=GiveSymbol[Extrinsic,1,covd],
+	extrinsic3=GiveSymbol[Extrinsic,3,covd]},
 	DefTensor[extrinsic1[-a,-b],M,OrthogonalTo->{nv[a],nv[b]},ProjectedWith->{indmetric[a,-d],indmetric[b,-i]},PrintAs->xMAGPrint[Extrinsic,1]];
 	DefTensor[extrinsic3[-a,-b],M,OrthogonalTo->{nv[a],nv[b]},ProjectedWith->{indmetric[a,-d],indmetric[b,-i]},PrintAs->xMAGPrint[Extrinsic,3]]
-	];
+	]]
 ]
 ]
 
@@ -2240,21 +2405,52 @@ indices = GetIndicesOfVBundle[VBundleOfMetric[indmetric],2]
 With[{
 	nv=Part[InducedFrom[indmetric],2],
 	a= indices[[1]],
-	b= indices[[2]],
+	b= indices[[2]]
+	},
+(****** Connection with Non Metricity and zero Torsion **********)
+	If[nonmetQ&&!torsionQ,
+	With[{acceleration1=GiveSymbol[Acceleration,"1",covd],
+	acceleration3=GiveSymbol[Acceleration,"2",covd],
+	acceleration1h=GiveSymbol[Acceleration,"1",covd,indmetric],
+	acceleration3h=GiveSymbol[Acceleration,"2",covd,indmetric],
+	accelerationcovdn=GiveSymbol[Acceleration,covd,nv]},
+
+	DefTensor[acceleration1[a],M,PrintAs->xMAGPrint[Acceleration,1]];
+	DefTensor[acceleration3[a],M,PrintAs->xMAGPrint[Acceleration,2]];
+	DefTensor[acceleration1h[a],M,OrthogonalTo->{nv[-a]},ProjectedWith->{indmetric[-a,b]},PrintAs->xMAGPrint[Acceleration,1,indmetric]];
+	DefTensor[acceleration3h[a],M,OrthogonalTo->{nv[-a]},ProjectedWith->{indmetric[-a,b]},PrintAs->xMAGPrint[Acceleration,2,indmetric]];
+	DefTensor[accelerationcovdn[],M,PrintAs->xMAGPrint[Acceleration,Null,nv]]
+	]
+	];
+
+(****** Connection with Torsion and zero Non metricity **********)
+	If[!nonmetQ&&torsionQ,
+	With[{acceleration1=GiveSymbol[Acceleration,1,covd],
+	acceleration1h=GiveSymbol[Acceleration,1,covd,indmetric],
+	accelerationcovdn=GiveSymbol[Acceleration,1,covd,nv]},
+	DefTensor[acceleration1[a],M,PrintAs->xMAGPrint[Acceleration,1]];
+	DefTensor[acceleration1h[a],M,OrthogonalTo->{nv[-a]},ProjectedWith->{indmetric[-a,b]},PrintAs->xMAGPrint[Acceleration,1]];
+	DefTensor[accelerationcovdn[],M,PrintAs->xMAGPrint[Acceleration,Null,nv]]
+	]
+	];
+
+
+(****** Connection with Non Metricity and Torsion **********)
+	If[nonmetQ&&torsionQ,
+	With[{
 	acceleration1=GiveSymbol[Acceleration,"1",covd],
 	acceleration3=GiveSymbol[Acceleration,"3",covd],
 	acceleration1h=GiveSymbol[Acceleration,"1",covd,indmetric],
-	acceleration3h=GiveSymbol[Acceleration,"3",covd,indmetric]
-	},
-With[{accelerationcovdn=GiveSymbol[Acceleration,covd,nv]},
-	If[nonmetQ&&torsionQ,
+	acceleration3h=GiveSymbol[Acceleration,"3",covd,indmetric],
+	accelerationcovdn=GiveSymbol[Acceleration,covd,nv]},
+
 	DefTensor[acceleration1[a],M,PrintAs->xMAGPrint[Acceleration,1]];
 	DefTensor[acceleration3[a],M,PrintAs->xMAGPrint[Acceleration,3]];
 	DefTensor[acceleration1h[a],M,OrthogonalTo->{nv[-a]},ProjectedWith->{indmetric[-a,b]},PrintAs->xMAGPrint[Acceleration,1,indmetric]];
 	DefTensor[acceleration3h[a],M,OrthogonalTo->{nv[-a]},ProjectedWith->{indmetric[-a,b]},PrintAs->xMAGPrint[Acceleration,3,indmetric]];
 	DefTensor[accelerationcovdn[],M,PrintAs->xMAGPrint[Acceleration,Null,nv]]
+	]
 	];
-]
 ]
 ]
 defMAGAccelerationTensors[covd_]:=defMAGAccelerationTensors[covd,Part[MetricsOfVBundle[Part[VBundlesOfCovD[covd],1]],2]]
@@ -2303,8 +2499,22 @@ With[{nv=InducedFrom[indmetric][[2]],
 	i4= indices[[4]],
 	riemann=GiveSymbol[Riemann,covd],
 	projind=GiveSymbol[Projector,indmetric],
-	vbQ=VBundleIndexQ[vb]
+	vbQ=VBundleIndexQ[vb],
+	lvQ=LeviCivitaQ[covd,met]
 	},
+
+								(* Levi Civita connection *)
+	If[lvQ,
+	With[{
+	Rhhhh=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,indmetric],
+	Rhhhn=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,nv],
+	Rhnhn=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,nv]
+	},
+	rule=Join[
+MakeRule[{projind[riemann[i1,i2,i3,i4]],Rhhhh[i1,i2,i3,i4]}],MakeRule[{projind[nv[-i4]riemann[i1,i2,i3,i4]],Rhhhn[i1 ,i2,i3]}],MakeRule[{projind[nv[-i2]*nv[-i4]*riemann[i1,i2,i3,i4]],Rhnhn[i1,i3]}]]
+	]];
+											(* Non metricity, zero torsion *)
+	If[!torsionQ&&nonmetricityQ,
 	With[{
 	Rhhhh=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,indmetric],
 	Rhhhn=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,nv],
@@ -2315,12 +2525,40 @@ With[{nv=InducedFrom[indmetric][[2]],
 	Rhhnn=GiveSymbol[Riemann,covd,indmetric,indmetric,nv,nv],
 	Rhnnn=GiveSymbol[Riemann,covd,indmetric,nv,nv,nv]
 	},
-								(* Levi Civita connection *)
-	If[LeviCivitaQ[covd,met],
 	rule=Join[
-MakeRule[{projind[riemann[i1,i2,i3,i4]],Rhhhh[i1,i2,i3,i4]}],MakeRule[{projind[nv[-i4]riemann[i1,i2,i3,i4]],Rhhhn[i1 ,i2,i3]}],MakeRule[{projind[nv[-i2]*nv[-i4]*riemann[i1,i2,i3,i4]],Rhnhn[i1,i3]}]]];
+MakeRule[{projind[riemann[i1,i2,i3,i4]],Rhhhh[i1,i2,i3,i4]}],MakeRule[{projind[nv[-i4]riemann[i1,i2,i3,i4]],Rhhhn[i1 ,i2,i3]}],
+MakeRule[{projind[nv[-i3]riemann[i1,i2,i3,i4]],Rhhnh[i1 ,i2,i4]}],
+MakeRule[{projind[nv[-i2]riemann[i1,i2,i3,i4]],Rhnhh[i1 ,i3,i4]}],MakeRule[{projind[nv[-i2]*nv[-i4]*riemann[i1,i2,i3,i4]],Rhnhn[i1,i3]}],
+MakeRule[{projind[nv[-i2]*nv[-i3]*riemann[i1,i2,i3,i4]],Rhnnh[i1,i4]}],
+MakeRule[{projind[nv[-i3]*nv[-i4]*riemann[i1,i2,i3,i4]],Rhhnn[i1,i2]}],
+MakeRule[{projind[nv[-i2]*nv[-i3]*nv[-i4]*riemann[i1,i2,i3,i4]],Rhnnn[i1]}]]
+	]];
+							(* Torsion, zero non-metricity *)
+	If[torsionQ&&!nonmetricityQ,
+	With[{
+	Rhhhh=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,indmetric],
+	Rhhhn=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,nv],
+	Rhnhh=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,indmetric],
+	Rhnhn=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,nv]
+	},
+	rule=Join[
+MakeRule[{projind[riemann[i1,i2,i3,i4]],Rhhhh[i1,i2,i3,i4]}],MakeRule[{projind[nv[-i4]riemann[i1,i2,i3,i4]],Rhhhn[i1 ,i2,i3]}],
+MakeRule[{projind[nv[-i3]riemann[i1,i2,i3,i4]],-Rhhhn[i1 ,i2,i4]}],
+MakeRule[{projind[nv[-i2]riemann[i1,i2,i3,i4]],Rhnhh[i1 ,i3,i4]}],MakeRule[{projind[nv[-i2]*nv[-i4]*riemann[i1,i2,i3,i4]],Rhnhn[i1,i3]}],
+MakeRule[{projind[nv[-i2]*nv[-i3]*riemann[i1,i2,i3,i4]],-Rhnhn[i1,i4]}]]
+	]];
 											(* General case *)
 	If[torsionQ&&nonmetricityQ,
+	With[{
+	Rhhhh=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,indmetric],
+	Rhhhn=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,nv],
+	Rhhnh=GiveSymbol[Riemann,covd,indmetric,indmetric,nv,indmetric],
+	Rhnhh=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,indmetric],
+	Rhnhn=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,nv],
+	Rhnnh=GiveSymbol[Riemann,covd,indmetric,nv,nv,indmetric],
+	Rhhnn=GiveSymbol[Riemann,covd,indmetric,indmetric,nv,nv],
+	Rhnnn=GiveSymbol[Riemann,covd,indmetric,nv,nv,nv]
+	},
 	rule=Join[
 MakeRule[{projind[riemann[i1,i2,i3,i4]],Rhhhh[i1,i2,i3,i4]}],MakeRule[{projind[nv[-i4]riemann[i1,i2,i3,i4]],Rhhhn[i1 ,i2,i3]}],
 MakeRule[{projind[nv[-i3]riemann[i1,i2,i3,i4]],Rhhnh[i1 ,i2,i4]}],
@@ -2352,19 +2590,35 @@ With[{nv=InducedFrom[indmetric][[2]],
 	i2= indices[[2]],
 	i3= indices[[3]],
 	i4= indices[[4]],
-	riemann=GiveSymbol[Riemann,covd]
+	riemann=GiveSymbol[Riemann,covd],
+	lvQ=LeviCivitaQ[covd,met]
 	},
 								(* Levi Civita connection *)
-	If[LeviCivitaQ[covd,met],
+	If[lvQ,
 	If[!InducedCurvatureRelationsQ[covd,indmetric],SetInducedCurvatureRelations[covd,indmetric]];
 	rule=MakeRule[{riemann[-i1,-i2,-i3,i4],Evaluate[InducedDecomposition[riemann[-i1,-i2,-i3,i4],{indmetric,nv}]//SafeCanonical]}]];
 											(* General case *)
-	If[torsionQ&&nonmetricityQ,
+	If[torsionQ||nonmetricityQ,
 	If[!InducedCurvatureRelationsQ[covd,indmetric],SetInducedCurvatureRelations[covd,indmetric]];
 	rule=MakeRule[{riemann[-i1,-i2,-i3,i4],Evaluate[InducedDecomposition[riemann[-i1,-i2,-i3,i4],{indmetric,nv}]//SafeCanonical]}]
 	]
 	];
 Return[rule,Module]
+]
+
+
+(* ::Input::Initialization:: *)
+toInducedCurvatureRules[covd_,indmet_,curvature_Symbol]:=With[{curv=GiveSymbol[curvature,covd],sot=SlotsOfTensor[GiveSymbol[curvature,covd]],vb=VBundleOfMetric[indmet],curvQ=CurvatureRelationsQ[covd]},
+Module[{inds =MapThread[#1/.#2&,{sot,Map[vb->#&,GetIndicesOfVBundle[VBundleOfMetric[indmet],Length[sot]]]}],
+	metric=Part[InducedFrom[indmet],1],rule,met=InducedFrom[indmet][[1]]
+	},
+With[{nv=InducedFrom[indmet][[2]],tens=curv@@inds},
+If[curvQ,ClearCurvatureRelations[covd,Verbose->False]];
+rule=MakeRule[{tens,Evaluate[RiemannDecomposition[ToRiemann[tens,covd],covd]/.InducedCurvatureRelations[covd,indmet]//NoScalar//SeparateMetric//SafeCanonical//ContractMetric//SafeCanonical]}];
+SetCurvatureRelations[covd,Verbose->False];
+Return[rule,Module]
+]
+]
 ]
 
 
@@ -2390,20 +2644,22 @@ With[{nv=InducedFrom[indmetric][[2]],
 	vbQ=VBundleIndexQ[vb],
 	covdmet=CovDOfMetric[met],
 	covdmetind=CovDOfMetric[indmetric],
-	covdind=GiveSymbol[covd,indmetric]
+	covdind=GiveSymbol[covd,indmetric],
+	lvQ=LeviCivitaQ[covd,met]
 	},
 	With[{
 	Rhhhh=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,indmetric]
 	},
-If[LeviCivitaQ[covd,met],
+If[lvQ,
 rule=MakeRule[{Rhhhh[i1,i2,i3,i4],Evaluate[(GaussCodazzi[projind[riemann[i1,i2,i3,i4]],indmetric])/.projind->ProjectWith[indmetric]//SameDummies//ContractMetric//SafeCanonical]}]
 	];
 											(* General case *)
-If[torsionQ&&nonmetricityQ,
+If[torsionQ||nonmetricityQ,
 MAGChristoffelTensorStart[covdind,indmetric,Verbose->False];
-rule=MakeRule[{Rhhhh[-i1,-i2,-i3,i4],Evaluate[GaussCodazzi[ToInducedDerivative[GradNormalToExtrinsicK[DistortionDecomposition[ToDistortion[(projind[riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,met,Verbose->False],covd],indmetric],covdmet,covdmetind],indmetric]//MetricToProjector//ContractMetric//SafeCanonical//SafeCanonical]}]];
-	]
-	];
+rule=MakeRule[{Rhhhh[-i1,-i2,-i3,i4],Evaluate[GaussCodazzi[ToInducedDerivative[GradNormalToExtrinsicK[DistortionDecomposition[ToDistortion[(projind[riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,met,Verbose->False],covd],indmetric],covdmet,covdmetind],indmetric]//MetricToProjector//ContractMetric//SafeCanonical//SafeCanonical]}]
+]
+]
+];
 Return[rule,Module]
 ]
 
@@ -2431,23 +2687,53 @@ With[{nv=InducedFrom[indmetric][[2]],
 	vbQ=VBundleIndexQ[vb],
 	covdmet=CovDOfMetric[met],
 	covdmetind=CovDOfMetric[indmetric],
-	covdind=GiveSymbol[covd,indmetric]
+	covdind=GiveSymbol[covd,indmetric],
+	lvQ=LeviCivitaQ[covd,met]
 	},
+If[lvQ,
+With[{
+	Rhhhn=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,nv]},
+rule=MakeRule[{Rhhhn[-i1,-i2,-i3],Evaluate[(GaussCodazzi[projind[nv[-i4]riemann[-i1,-i2,-i3,i4]],indmetric])/.projind->ProjectWith[indmetric]//ContractMetric//SafeCanonical]}]
+]
+];
+
+											(* Non metricity, zero torsion *)
+If[!torsionQ&&nonmetricityQ,
 	With[{
 	Rhhhn=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,nv],
 	Rhhnh=GiveSymbol[Riemann,covd,indmetric,indmetric,nv,indmetric],
 	Rhnhh=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,indmetric]
 	},
-If[LeviCivitaQ[covd,met],
-rule=MakeRule[{Rhhhn[-i1,-i2,-i3],Evaluate[(GaussCodazzi[projind[nv[-i4]riemann[-i1,-i2,-i3,i4]],indmetric])/.projind->ProjectWith[indmetric]//ContractMetric//SafeCanonical]}]
-	];
+rule=Join[MakeRule[{Rhhnh[-i1,-i2,i4],Evaluate[GaussCodazzi[ToInducedDerivative[GradNormalToExtrinsicK[DistortionDecomposition[ToDistortion[(projind[nv[i3]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd],indmetric]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}],
+MakeRule[{Rhhhn[-i1,-i2,-i3],Evaluate[GaussCodazzi[ToInducedDerivative[GradNormalToExtrinsicK[DistortionDecomposition[ToDistortion[(projind[nv[-i4]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd],indmetric]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}],
+MakeRule[{Rhnhh[-i1,-i3,i4],Evaluate[GaussCodazzi[GradNormalToExtrinsicK[ToInducedDerivative[DistortionDecomposition[ToDistortion[(projind[nv[i2]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd]//MetricToProjector//SafeCanonical,covdmet,covdmetind],indmetric],indmetric]//ContractMetric//SafeCanonical]}]
+	]
+	]
+];
+							(* Torsion, zero non-metricity *)
+If[torsionQ&&!nonmetricityQ,
+	With[{
+	Rhhhn=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,nv],
+	Rhnhh=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,indmetric]
+	},
+	rule=Join[
+MakeRule[{Rhhhn[-i1,-i2,-i3],Evaluate[GaussCodazzi[ToInducedDerivative[GradNormalToExtrinsicK[DistortionDecomposition[ToDistortion[(projind[nv[-i4]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd],indmetric]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}],
+MakeRule[{Rhnhh[-i1,-i3,i4],Evaluate[GaussCodazzi[GradNormalToExtrinsicK[ToInducedDerivative[DistortionDecomposition[ToDistortion[(projind[nv[i2]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd]//MetricToProjector//SafeCanonical,covdmet,covdmetind],indmetric],indmetric]//ContractMetric//SafeCanonical]}]
+	]
+	]
+];
 											(* General case *)
-	If[torsionQ&&nonmetricityQ,	rule=Join[MakeRule[{Rhhnh[-i1,-i2,i4],Evaluate[GaussCodazzi[ToInducedDerivative[GradNormalToExtrinsicK[DistortionDecomposition[ToDistortion[(projind[nv[i3]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd],indmetric]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}],
+If[torsionQ&&nonmetricityQ,
+With[{
+	Rhhhn=GiveSymbol[Riemann,covd,indmetric,indmetric,indmetric,nv],
+	Rhhnh=GiveSymbol[Riemann,covd,indmetric,indmetric,nv,indmetric],
+	Rhnhh=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,indmetric]
+	},	rule=Join[MakeRule[{Rhhnh[-i1,-i2,i4],Evaluate[GaussCodazzi[ToInducedDerivative[GradNormalToExtrinsicK[DistortionDecomposition[ToDistortion[(projind[nv[i3]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd],indmetric]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}],
 MakeRule[{Rhhhn[-i1,-i2,-i3],Evaluate[GaussCodazzi[ToInducedDerivative[GradNormalToExtrinsicK[DistortionDecomposition[ToDistortion[(projind[nv[-i4]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd],indmetric]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}],
 MakeRule[{Rhnhh[-i1,-i3,i4],Evaluate[GaussCodazzi[GradNormalToExtrinsicK[ToInducedDerivative[DistortionDecomposition[ToDistortion[(projind[nv[i2]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd]//MetricToProjector//SafeCanonical,covdmet,covdmetind],indmetric],indmetric]//ContractMetric//SafeCanonical]}]
 ]
-	];
-	]
+]
+]
 ];
 Return[rule,Module]
 ]
@@ -2478,16 +2764,35 @@ With[{nv=InducedFrom[indmetric][[2]],
 	covdmetind=CovDOfMetric[indmetric],
 	covdind=GiveSymbol[covd,indmetric]
 	},
-	With[{
-	Rhnhn=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,nv],
-	Rhnnh=GiveSymbol[Riemann,covd,indmetric,nv,nv,indmetric],
-	Rhhnn=GiveSymbol[Riemann,covd,indmetric,indmetric,nv,nv]
-	},
-If[LeviCivitaQ[covd,met],rule=MakeRule[{Rhnhn[-i1,-i3],Evaluate[SafeCanonical[ContractMetric[GradNormalToExtrinsicK[ToInducedDerivative[(GaussCodazzi[projind[nv[-i4]nv[i2]riemann[-i1,-i2,-i3,i4]],indmetric])
+
+If[LeviCivitaQ[covd,met],
+With[{Rhnhn=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,nv]},rule=MakeRule[{Rhnhn[-i1,-i3],Evaluate[SafeCanonical[ContractMetric[GradNormalToExtrinsicK[ToInducedDerivative[(GaussCodazzi[projind[nv[-i4]nv[i2]riemann[-i1,-i2,-i3,i4]],indmetric])
 /.projind->ProjectWith[indmetric],covd,covdmetind],indmetric]]]]}]
+]
 ];
+											(*  NonMetricity and zero torsion *)
+If[!torsionQ&&nonmetricityQ,
+With[{
+	Rhnhn=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,nv],
+	Rhnnh=GiveSymbol[Riemann,covd,indmetric,nv,nv,indmetric]
+	},rule=Join[MakeRule[{Rhnnh[-i1,-i4],Evaluate[GradNormalToExtrinsicK[ToInducedDerivative[(GaussCodazzi[GradNormalToExtrinsicK[ToInducedDerivative[DistortionDecomposition[ToDistortion[(projind[nv[i2]nv[i3]riemann[-i1,-i2,-i3,-i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric],indmetric]//SafeCanonical)/.projind->ProjectWith[indmetric],covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}],MakeRule[{Rhnhn[-i1,-i3],Evaluate[GradNormalToExtrinsicK[ToInducedDerivative[(GaussCodazzi[GradNormalToExtrinsicK[ToInducedDerivative[DistortionDecomposition[ToDistortion[(projind[nv[i2]nv[-i4]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric],indmetric]//SafeCanonical)/.projind->ProjectWith[indmetric],covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}]]
+	]
+	];
+
+						(*  Torsion and zero Non metricity *)
+If[torsionQ&&!nonmetricityQ,
+With[{
+	Rhnhn=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,nv]
+	},rule=Join[MakeRule[{Rhnhn[-i1,-i3],Evaluate[GradNormalToExtrinsicK[ToInducedDerivative[(GaussCodazzi[GradNormalToExtrinsicK[ToInducedDerivative[DistortionDecomposition[ToDistortion[(projind[nv[i2]nv[-i4]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric],indmetric]//SafeCanonical)/.projind->ProjectWith[indmetric],covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}]]
+	]
+	];
+
 											(* General case *)
-If[torsionQ&&nonmetricityQ,rule=Join[MakeRule[{Rhnnh[-i1,-i4],Evaluate[GradNormalToExtrinsicK[ToInducedDerivative[(GaussCodazzi[GradNormalToExtrinsicK[ToInducedDerivative[DistortionDecomposition[ToDistortion[(projind[nv[i2]nv[i3]riemann[-i1,-i2,-i3,-i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric],indmetric]//SafeCanonical)/.projind->ProjectWith[indmetric],covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}],MakeRule[{Rhnhn[-i1,-i3],Evaluate[GradNormalToExtrinsicK[ToInducedDerivative[(GaussCodazzi[GradNormalToExtrinsicK[ToInducedDerivative[DistortionDecomposition[ToDistortion[(projind[nv[i2]nv[-i4]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric],indmetric]//SafeCanonical)/.projind->ProjectWith[indmetric],covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}]]
+If[torsionQ&&nonmetricityQ,
+With[{
+	Rhnhn=GiveSymbol[Riemann,covd,indmetric,nv,indmetric,nv],
+	Rhnnh=GiveSymbol[Riemann,covd,indmetric,nv,nv,indmetric]
+	},rule=Join[MakeRule[{Rhnnh[-i1,-i4],Evaluate[GradNormalToExtrinsicK[ToInducedDerivative[(GaussCodazzi[GradNormalToExtrinsicK[ToInducedDerivative[DistortionDecomposition[ToDistortion[(projind[nv[i2]nv[i3]riemann[-i1,-i2,-i3,-i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric],indmetric]//SafeCanonical)/.projind->ProjectWith[indmetric],covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}],MakeRule[{Rhnhn[-i1,-i3],Evaluate[GradNormalToExtrinsicK[ToInducedDerivative[(GaussCodazzi[GradNormalToExtrinsicK[ToInducedDerivative[DistortionDecomposition[ToDistortion[(projind[nv[i2]nv[-i4]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind],indmetric],indmetric]//SafeCanonical)/.projind->ProjectWith[indmetric],covdmet,covdmetind],indmetric]//ContractMetric//SafeCanonical]}]]
 	]
 	]
 	];
@@ -2501,7 +2806,7 @@ Affinerules[covd_,indmetric_]:=Module[
 	vb=VBundleOfMetric[indmetric],
 	indices = GetIndicesOfVBundle[VBundleOfMetric[indmetric],4],
 	M=ManifoldOfCovD[covd],
-	rule,
+	rule={},
 	met=InducedFrom[indmetric][[1]]
 	},
 
@@ -2524,9 +2829,8 @@ With[{nv=InducedFrom[indmetric][[2]],
 	Rhhnn=GiveSymbol[Riemann,covd,indmetric,indmetric,nv,nv],
 	Rhnnn=GiveSymbol[Riemann,covd,indmetric,nv,nv,nv]
 	},
-If[LeviCivitaQ[covd,met],rule={}];
 											(* General case *)
-If[torsionQ&&nonmetricityQ,rule=Join[MakeRule[{Rhhnn[-i1,-i2],Evaluate[ToInducedDerivative[GradNormalToExtrinsicK[DistortionDecomposition[ToDistortion[(projind[nv[-i4]nv[i3]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd],indmetric]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind]//ContractMetric//ToCanonical]}],MakeRule[{Rhnnn[-i1],Evaluate[GradNormalToExtrinsicK[ToInducedDerivative[DistortionDecomposition[ToDistortion[projind[nv[-i4]nv[i3]nv[i2]riemann[-i1,-i2,-i3,i4]]/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind]//SafeCanonical,indmetric]//ContractMetric//ToCanonical]}]]
+If[(torsionQ&&nonmetricityQ)||(!torsionQ&&nonmetricityQ),rule=Join[MakeRule[{Rhhnn[-i1,-i2],Evaluate[ToInducedDerivative[GradNormalToExtrinsicK[DistortionDecomposition[ToDistortion[(projind[nv[-i4]nv[i3]riemann[-i1,-i2,-i3,i4]])/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd],indmetric]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind]//ContractMetric//SafeCanonical]}],MakeRule[{Rhnnn[-i1],Evaluate[GradNormalToExtrinsicK[ToInducedDerivative[DistortionDecomposition[ToDistortion[projind[nv[-i4]nv[i3]nv[i2]riemann[-i1,-i2,-i3,i4]]/.projind->ProjectWith[indmetric],covd,metric,Verbose->False],covd]//MetricToProjector//ContractMetric//SafeCanonical,covdmet,covdmetind]//SafeCanonical,indmetric]//ContractMetric//SafeCanonical]}]]
 	]
 	]
 	];
@@ -2540,8 +2844,7 @@ distortionToInducedrules[covd_,indmetric_]:=Module[
 	vb=VBundleOfMetric[indmetric],
 	indices = GetIndicesOfVBundle[VBundleOfMetric[indmetric],3],
 	M=ManifoldOfCovD[covd],
-	rule,
-	Chhh=GiveSymbol[Distortion,covd,indmetric]
+	rule
 	},
 
 With[{nv=InducedFrom[indmetric][[2]],
@@ -2550,27 +2853,56 @@ With[{nv=InducedFrom[indmetric][[2]],
 	i1= indices[[1]],
 	i2= indices[[2]],
 	i3= indices[[3]],
-	distortion=GiveSymbol[Distortion,covd],
 	projind=GiveSymbol[Projector,indmetric],
 	vbQ=VBundleIndexQ[vb]
 	},
+	(****** Connection with Non Metricity and zero Torsion **********)
+	If[!torsionQ&&nonmetricityQ,
 	With[{
+		Dhhh=GiveSymbol[Disformation,covd,indmetric],
+		Dnhh=GiveSymbol[Disformation,covd,nv,indmetric,indmetric],
+		Dhnh=GiveSymbol[Disformation,covd,indmetric,nv,indmetric],
+		Dnhn=GiveSymbol[Disformation,covd,nv,indmetric,nv],
+		Dhnn=GiveSymbol[Disformation,covd,indmetric,nv,nv],
+		Dnnn=GiveSymbol[Disformation,covd,nv,nv,nv],
+		disformation=GiveSymbol[Disformation,covd]},
+
+	rule=Join[MakeRule[{projind[disformation[i1,i2,i3]],Dhhh[i1,i2,i3]}],MakeRule[{projind[nv[i1]disformation[-i1,i2,i3]],Dnhh[i2 ,i3]}],MakeRule[{projind[nv[i1]*disformation[i2,-i1,i3]],Dhnh[i2,i3]}],MakeRule[{projind[nv[i1]*disformation[i2,i3,-i1]],Dhnh[i2,i3]}],
+MakeRule[{projind[nv[i1]*nv[i2]*disformation[-i1,i3,-i2]],Dnhn[i3]}],MakeRule[{projind[nv[i1]*nv[i2]*disformation[-i1,-i2,i3]],Dnhn[i3]}],
+MakeRule[{projind[nv[i1]*nv[i2]*disformation[i3,-i2,-i1]],Dhnn[i3]}],
+MakeRule[{projind[nv[i1]*nv[i2]*disformation[i3,-i1,-i2]],Dhnn[i3]}],
+MakeRule[{disformation[i1, -i2, -i3]*nv[-i1]*nv[i2]*nv[i3], Dnnn[]}]]
+	]];
+	(****** Connection with Torsion and zero non metricity **********)
+	If[torsionQ&&!nonmetricityQ,
+	With[{
+	Khhh=GiveSymbol[Contorsion,covd,indmetric],
+	Knhh=GiveSymbol[Contorsion,covd,nv,indmetric,indmetric],
+	Khnh=GiveSymbol[Contorsion,covd,indmetric,nv,indmetric],
+	Khnn=GiveSymbol[Contorsion,covd,indmetric,nv,nv],
+	contorsion=GiveSymbol[Contorsion,covd]},
+	rule=Join[MakeRule[{projind[contorsion[i1,i2,i3]],Khhh[i1,i2,i3]}],MakeRule[{projind[nv[i1]contorsion[-i1,i2,i3]],Knhh[i2 ,i3]}],
+MakeRule[{projind[nv[i1]*contorsion[i3,i2,-i1]],-Knhh[i2 ,i3]}],MakeRule[{projind[nv[i1]*contorsion[i2,-i1,i3]],Khnh[i2,i3]}],MakeRule[{projind[nv[i1]*nv[i2]*contorsion[i3,-i1,-i2]],Khnn[i3]}]]
+	]];
+	(* General case torsion and non metricity *)
+	If[torsionQ&&nonmetricityQ,
+	With[{distortion=GiveSymbol[Distortion,covd],
+		Chhh=GiveSymbol[Distortion,covd,indmetric],
 		Chhn=GiveSymbol[Distortion,covd,indmetric,indmetric,nv],
 		Chnh=GiveSymbol[Distortion,covd,indmetric,nv,indmetric],
 		Cnhh=GiveSymbol[Distortion,covd,nv,indmetric,indmetric],
 		Cnnh=GiveSymbol[Distortion,covd,nv,nv,indmetric],
 		Cnhn=GiveSymbol[Distortion,covd,nv,indmetric,nv],
 		Chnn=GiveSymbol[Distortion,covd,indmetric,nv,nv],
-		Cnnn=GiveSymbol[Distortion,covd,nv,nv,nv]
-	},
-													(* General case *)
-	If[torsionQ&&nonmetricityQ,
-	rule=Join[
-MakeRule[{projind[distortion[i1,i2,i3]],Chhh[i1,i2,i3]}],MakeRule[{projind[nv[i1]distortion[-i1,i2,i3]],Cnhh[i2 ,i3]}],MakeRule[{projind[nv[i1]*distortion[i2,-i1,i3]],Chnh[i2,i3]}],
+		Cnnn=GiveSymbol[Distortion,covd,nv,nv,nv]},
+
+	rule=Join[MakeRule[{projind[distortion[i1,i2,i3]],Chhh[i1,i2,i3]}],MakeRule[{projind[nv[i1]distortion[-i1,i2,i3]],Cnhh[i2 ,i3]}],MakeRule[{projind[nv[i1]*distortion[i2,-i1,i3]],Chnh[i2,i3]}],
 MakeRule[{projind[nv[i1]*distortion[i2,i3,-i1]],Chhn[i2,i3]}],MakeRule[{projind[nv[i1]*nv[i2]*distortion[-i1,-i2,i3]],Cnnh[i3]}],
 MakeRule[{projind[nv[i1]*nv[i2]*distortion[-i1,i3,-i2]],Cnhn[i3]}],
 MakeRule[{projind[nv[i1]*nv[i2]*distortion[i3,-i2,-i1]],Chnn[i3]}],
-MakeRule[{distortion[i1, -i2, -i3]*nv[-i1]*nv[i2]*nv[i3], Cnnn[]}]]]]
+MakeRule[{distortion[i1, -i2, -i3]*nv[-i1]*nv[i2]*nv[i3], Cnnn[]}]]
+	]
+]
 ];
 Return[rule,Module]
 ]
@@ -2587,16 +2919,42 @@ rules
 With[
 {nv=Part[InducedFrom[indmetric],2],
 a= indices[[1]],
-b= indices[[2]],
-distortion=GiveSymbol[Distortion,covd],
-extrinsic1=GiveSymbol[Extrinsic,1,covd],
-extrinsic3=GiveSymbol[Extrinsic,3,covd],
-extrinsich=GiveSymbol[ExtrinsicK,indmetric]
-},
-With[{Chhn=GiveSymbol[Distortion,covd,indmetric,indmetric,nv],
+b= indices[[2]]
+},			
+	
+(****** Connection with Non Metricity and zero Torsion **********)
+If[nonmetQ&&!torsionQ,
+With[{
+	disformation=GiveSymbol[Contorsion,covd],
+	extrinsic1=GiveSymbol[Extrinsic,1,covd],
+	extrinsic2=GiveSymbol[Extrinsic,2,covd],
+	extrinsich=GiveSymbol[ExtrinsicK,indmetric],
+	Dhnh=GiveSymbol[Disformation,covd,indmetric,nv,indmetric],
+	Dnhh=GiveSymbol[Disformation,covd,nv,indmetric,indmetric]},
+	rules=Join[MakeRule[{Dhnh[b, -a],-extrinsic2[-a, b] + extrinsich[-a, b]}],MakeRule[{Dnhh[-a, -b],extrinsic1[-a, -b]-extrinsich[-a, -b]}]];
+	]
+];
+(****** Connection with Torsion and zero non metricity **********)
+If[!nonmetQ&&torsionQ,
+With[{
+	contorsion=GiveSymbol[Contorsion,covd],
+	extrinsic1=GiveSymbol[Extrinsic,1,covd],
+	extrinsich=GiveSymbol[ExtrinsicK,indmetric],
+	Knhh=GiveSymbol[Contorsion,covd,nv,indmetric,indmetric]
+	},
+	rules=MakeRule[{Knhh[-a, -b],extrinsic1[-a, -b]-extrinsich[-a, -b]}];
+	]
+];
+					(* General case torsion and non metricity *)
+If[nonmetQ&&torsionQ,
+With[{
+	distortion=GiveSymbol[Distortion,covd],
+	extrinsic1=GiveSymbol[Extrinsic,1,covd],
+	extrinsic3=GiveSymbol[Extrinsic,3,covd],
+	extrinsich=GiveSymbol[ExtrinsicK,indmetric],
+	Chhn=GiveSymbol[Distortion,covd,indmetric,indmetric,nv],
 	Cnhh=GiveSymbol[Distortion,covd,nv,indmetric,indmetric]},
-						(* The function *)
-	If[nonmetQ&&torsionQ,
+
 	rules=Join[MakeRule[{Chhn[b, -a],-extrinsic3[-a, b] + extrinsich[-a, b]}],MakeRule[{Cnhh[-a, -b],extrinsic1[-a, -b]-extrinsich[-a, -b]}]];
 	]
 ]
@@ -2617,15 +2975,42 @@ rules
 With[{nv=Part[InducedFrom[indmetric],2],
 	a= indices[[1]]
 	},
-	With[{Cnnh=GiveSymbol[Distortion,covd,nv,nv,indmetric],
-		Chnn=GiveSymbol[Distortion,covd,indmetric,nv,nv],
-		Cnnn=GiveSymbol[Distortion,covd,nv,nv,nv],
-		acceleration1h=GiveSymbol[Acceleration,"1",covd,indmetric],
-		acceleration3h=GiveSymbol[Acceleration,"3",covd,indmetric],
-		accelerationcovdn=GiveSymbol[Acceleration,covd,nv],
-		accelerationn=GiveSymbol[Acceleration,nv]
+(****** Connection with Non Metricity and zero Torsion **********)
+If[nonmetQ&&!torsionQ,
+With[{
+	Dnhn=GiveSymbol[Disformation,covd,nv,indmetric,nv],
+	Dhnn=GiveSymbol[Disformation,covd,indmetric,nv,nv],
+	Dnnn=GiveSymbol[Disformation,covd,nv,nv,nv],
+	acceleration1h=GiveSymbol[Acceleration,"1",covd,indmetric],
+	acceleration3h=GiveSymbol[Acceleration,"2",covd,indmetric],
+	accelerationcovdn=GiveSymbol[Acceleration,covd,nv],
+	accelerationn=GiveSymbol[Acceleration,nv]
 		},
+		rules=Join[MakeRule[{Dnhn[-a],-acceleration3h[-a]+accelerationn[-a]}],MakeRule[{Dhnn[-a],acceleration1h[-a]-accelerationn[-a]}],MakeRule[{Dnnn[],accelerationcovdn[]}]]
+		]
+];
+(****** Connection with Torsion and zero non metricity **********)
+If[!nonmetQ&&torsionQ,
+With[{
+	Khnn=GiveSymbol[Contorsion,covd,indmetric,nv,nv],
+	acceleration1h=GiveSymbol[Acceleration,1,covd,indmetric],
+	accelerationcovdn=GiveSymbol[Acceleration,covd,nv],
+	accelerationn=GiveSymbol[Acceleration,nv]
+	},
+		rules=MakeRule[{Khnn[-a],acceleration1h[-a]-accelerationn[-a]}]
+	]
+];
+	(* General case torsion and non metricity *)
 If[nonmetQ&&torsionQ,
+With[{
+	Cnnh=GiveSymbol[Distortion,covd,nv,nv,indmetric],
+	Chnn=GiveSymbol[Distortion,covd,indmetric,nv,nv],
+	Cnnn=GiveSymbol[Distortion,covd,nv,nv,nv],
+	acceleration1h=GiveSymbol[Acceleration,"1",covd,indmetric],
+	acceleration3h=GiveSymbol[Acceleration,"3",covd,indmetric],
+	accelerationcovdn=GiveSymbol[Acceleration,covd,nv],
+	accelerationn=GiveSymbol[Acceleration,nv]
+		},
 		rules=Join[MakeRule[{Cnnh[-a],-acceleration3h[-a]+accelerationn[-a]}],MakeRule[{Chnn[-a],acceleration1h[-a]-accelerationn[-a]}],MakeRule[{Cnnn[],accelerationcovdn[]}]]
 		]
 ]
@@ -2664,7 +3049,7 @@ ToProjectiveVariables[exp_,covd_?CovDQ]:=ToProjectiveVariables[exp,covd,First@Se
 
 
 (* ::Input::Initialization:: *)
-StopInducedDecomposition[covd_,indmetric_]:=Module[{covdmetric=CovDOfMetric@InducedFrom[indmetric][[1]]},
+StopInducedDecomposition[covd_,indmetric_]:=Module[{},
 undefCurvatureInducedComp[covd,indmetric];
 undefDistortionInducedComp[covd,indmetric];
 undefMAGExtrinsicTensors[covd,indmetric];
@@ -2844,927 +3229,6 @@ UndefTensor[distortionPI3];
 UndefTensor[distortionPI2];
 ]
 ]
-
-
-(* ::Input::Initialization:: *)
-SetConformalTo[metric_?MetricQ,{originalmetric_?MetricQ,confactor_}]:=Module[{prot=Unprotect[metric],
-vb=VBundleOfMetric[metric],
-indices = GetIndicesOfVBundle[VBundleOfMetric[metric], 4],
-covdmet=CovDOfMetric[metric],
-covdomet=CovDOfMetric[originalmetric],metToomet,ometTomet,christToochrist,ochristTochrist,
-riemTooriem,oriemToriem,ricciTooricci,oricciToricci, riccisTooriccis,oriccisToriccis
-},
-With[{i1= indices[[1]],
-		i2= indices[[2]],
-	i3= indices[[3]],
-	i4= indices[[4]],
-	imet=GiveSymbol[Inv,metric],
-	iomet=Inv[originalmetric],
-	chrismet=GiveSymbol[Christoffel,covdmet],
-	chrisomet=GiveSymbol[Christoffel,covdomet],
-	riemmet=GiveSymbol[Riemann,covdmet],
-	riemomet=GiveSymbol[Riemann,covdomet],
-	riccimet=GiveSymbol[Ricci,covdmet],
-	ricciomet=GiveSymbol[Ricci,covdomet],
-	ricciscalarmet=GiveSymbol[RicciScalar,covdmet],
-	ricciscalaromet=GiveSymbol[RicciScalar,covdomet],
-	curvQmet=CurvatureRelationsQ[covdmet],
-	curvQomet=CurvatureRelationsQ[covdomet]
-},
-If[curvQmet,ClearCurvatureRelations[covdmet]];
-If[curvQomet,ClearCurvatureRelations[covdomet]];
-ReportSet[$CommuteCovDsOnScalars,True];
-(**  Composition for covariant derivative **)
-covdomet[a_]@(f_?ScalarFunctionQ[args___]):=xAct`xTensor`Private`multiD[covdomet[a],f[args]];
-(**********************************)
-metric/:ConformalFactor[metric,originalmetric]=confactor;
-metric/:ConformalFactor[originalmetric,metric]=1/confactor;
-metToomet=Join[MakeRule[{metric[-i1,-i2],ConformalFactor[metric,originalmetric]*originalmetric[-i1,-i2]},MetricOn->None],
-MakeRule[{imet[i1,i2],ConformalFactor[originalmetric,metric]*iomet[i1,i2]},MetricOn->None],{Determinant[metric][]->confactor^DimOfVBundle[VBundleOfMetric[metric]] Determinant[originalmetric][]}];
-ometTomet=Join[
-If[FirstMetricQ[originalmetric],
-Join[MakeRule[{originalmetric[-i1, -i2],metric[-i1, -i2]*ConformalFactor[originalmetric,metric]},MetricOn->None],MakeRule[{iomet[i1, i2],ConformalFactor[metric,originalmetric]*imet[i1, i2]},MetricOn->None]]],{Determinant[originalmetric][]->Determinant[metric][]/confactor^DimOfVBundle[VBundleOfMetric[metric]]}];
-christToochrist=SafeMakeRule[{chrismet[i1,-i2,-i3],ChangeCovD[(chrismet[i1,-i2,-i3]//ChristoffelToGradMetric)/.metToomet,PD,covdomet]//SafeCanonical}];
-ochristTochrist=SafeMakeRule[{chrisomet[i1,-i2,-i3],ChangeCovD[(chrisomet[i1,-i2,-i3]//ChristoffelToGradMetric)/.ometTomet,PD,covdmet]//SafeCanonical}];
-riemTooriem=SafeMakeRule[{riemmet[-i1,-i2,-i3,i4],CollectTensors[ChangeCovD[(ChangeCurvature[riemmet[-i1,-i2,-i3,i4],covdmet,covdomet]//BreakChristoffel)/.ochristTochrist/.ometTomet/.christToochrist/.metToomet,covdmet,covdomet],CollectMethod->Default]}];
-oriemToriem=SafeMakeRule[{riemomet[-i1,-i2,-i3,i4],CollectTensors[ChangeCovD[(ChangeCurvature[riemomet[-i1,-i2,-i3,i4],covdomet,covdmet]//BreakChristoffel)/.christToochrist/.metToomet/.ochristTochrist/.ometTomet,covdomet,covdmet],CollectMethod->SafeCanonical]}];
-ricciTooricci=SafeMakeRule[{riccimet[-i1,-i2],CollectTensors[riemmet[-i1,-i4,-i2,i4]/.riemTooriem]}];
-oricciToricci=SafeMakeRule[{ricciomet[-i1,-i2],CollectTensors[riemomet[-i1,-i4,-i2,i4]/.oriemToriem,CollectMethod->SafeCanonical]}];
-riccisTooriccis=SafeMakeRule[{ricciscalarmet[],CollectTensors[imet[i1,i2]riccimet[-i1,-i2]/.metToomet/.ricciTooricci]}];
-oriccisToriccis=SafeMakeRule[{ricciscalaromet[],CollectTensors[iomet[i1,i2]*ricciomet[-i1,-i2]/.ometTomet/.oricciToricci,CollectMethod->SafeCanonical]}];
-(*** we collect all the rules in ConformalRules ***)
-metric/:ConformalRules[metric,originalmetric]=Join[metToomet,christToochrist,riemTooriem,ricciTooricci,riccisTooriccis];
-metric/:ConformalRules[originalmetric,metric]=Join[ometTomet,ochristTochrist,oriemToriem,oricciToricci,oriccisToriccis];
-If[curvQmet,SetCurvatureRelations[covdmet]];
-If[curvQomet,SetCurvatureRelations[covdomet]];
-Protect[Evaluate[prot]];
-]
-]
-
-
-(* ::Input::Initialization:: *)
-SetConformalTo[metric_?MetricQ[-i1_,-i2_],{originalmetric_?MetricQ[-i1_,-i2_],confactor_}]:=SetConformalTo[metric,{originalmetric,confactor}];
-
-
-(* ::Input::Initialization:: *)
-Unprotect[DefMetric]
-Off[RuleDelayed::rhs];
-Options[DefMetric]:={
-PrintAs->Identity,
-FlatMetric->False,
-InducedFrom->Null,
-ConformalTo->Null,
-OtherDependencies->{},
-WeightedWithBasis->Null,
-epsilonOrientationInBasis:>{AIndex,$epsilonSign},
-Master->Null,
-ProtectNewSymbol:>$ProtectNewSymbols,
-DefInfo->{"",""},
-DefMetricPerturbation->True}
-DefMetric[signdet_,metric_[-ind1_,-ind2_],covd_,options:OptionsPattern[]]:=Catch@With[{
-vbundle=VBundleOfIndex[ind1]},
-
-Module[{covdsymbol,flat,inducedfrom,confto,odeps,wwb,eoib,pns,info,flatPD,inducedQ,dim,integerdimQ,frozenQ,firstQ,invertQ,firstmetric,supermetric,vector,LCmetric},
-
-(* Options and checks *)
-{covdsymbol,flat,inducedfrom,confto,odeps,wwb,eoib,pns,info}=OptionValue[{DefMetric,DefCovD},{options},{SymbolOfCovD,FlatMetric,InducedFrom,ConformalTo,OtherDependencies,WeightedWithBasis,epsilonOrientationInBasis,ProtectNewSymbol,DefInfo}];
-
-xAct`xTensor`Private`DefMetricCheck[signdet,metric[-ind1,-ind2],covd,covdsymbol,flat,inducedfrom,confto,odeps,wwb,eoib];
-(** xTras extension **)
-If[TrueQ@And[DefMetricPerturbaton/.CheckOptions[options]/.Options[DefMetric],!(FlatMetric/.CheckOptions[options]/.Options[DefMetric])],DefMetricPerturbation[metric,GiveSymbol[Perturbation,metric],GiveSymbol[PerturbationParameter,metric]];
-PrintAs[Evaluate@GiveSymbol[Perturbation,metric]]^=StringJoin[PrintAs[Evaluate@Perturbation],PrintAs[Evaluate@metric]]];
-(* Explore *)
-flatPD=flat&&(covd===PD);
-dim=DimOfVBundle[vbundle];
-integerdimQ=IntegerQ[dim];
-(* One and only one of firstQ, inducedQ, frozenQ is True, and the other two are False *)
-firstQ=MetricsOfVBundle[vbundle]==={};
-inducedQ=And[!firstQ,inducedfrom=!=Null];
-frozenQ=And[!firstQ,!inducedQ];
-If[inducedQ,{supermetric,vector}=inducedfrom];
-If[frozenQ,firstmetric=First[MetricsOfVBundle[vbundle]]];
-
-With[{
-manifold=BaseOfVBundle[vbundle],
-deps=Union[{BaseOfVBundle[vbundle]},odeps],
-vbQ=xAct`xTensor`Private`VBundleIndexQ[vbundle],
-vbpmQ=xAct`xTensor`Private`VBundleIndexPMQ[vbundle],
-invmetric=If[frozenQ,GiveSymbol[Inv,metric],metric]},
-
-(* Avoid messages from options of DefMetric not accepted in DefTensor or DefCovD *)
-Off[OptionValue::nodef];
-
-(* Define metric tensor. Do not protect symbol. Do not use ProjectedWith. It is always symmetric *)
-DefTensor[metric[-ind1,-ind2],deps,Symmetric[{1,2}],
-ProtectNewSymbol->False,
-OrthogonalTo:>If[inducedQ,{vector[ind1]},{}],
-DefInfo:>If[info===False,False,{"symmetric metric tensor",""}],
-options];
-
-MakexTensions[DefMetric,"Beginning",signdet,metric[-ind1,-ind2],covd,options];
-
-(* Register structure *)
-AppendToUnevaluated[$Metrics,metric];
-MetricQ[metric]^=True;
-CovDOfMetric[metric]^=covd;
-VBundleOfMetric[metric]^=vbundle;
-xUpAppendTo[MetricsOfVBundle[vbundle],metric];
-FlatMetricQ[metric]^=flat;
-InducedFrom[metric]^=inducedfrom;
-
-(* Signature *)
-If[Head[signdet]===List &&Length[signdet]===3,
-SignatureOfMetric[metric]^=signdet;
-SignDetOfMetric[metric]^=If[signdet[[3]]===0,(-1)^signdet[[2]],0],
-SignDetOfMetric[metric]^=signdet;
-];
-(* Invertibility *)
-invertQ=SignDetOfMetric[metric]=!=0;
-(* Define inverse metric. TODO: Orthogonal and Projected? *)
-If[invertQ,
-If[frozenQ ,
-DefTensor[invmetric[ind1,ind2],deps,Symmetric[{1,2}],
-ProtectNewSymbol->False,
-Master->metric,
-DefInfo:>If[info===False,False,{"inverse metric tensor","Metric is frozen!"}],
-TensorID->{InvMetric,metric},
-PrintAs:>GiveOutputString[Inv,metric],
-options]
-],
-Print["** DefMetric: non-invertible metric being defined! Dangerous!"]
-];
-
-(* Directional indices are not allowed in metrics. Why only for first metrics? *)
-If[firstQ,
-metric[Dir[expr_],b_]:=ReplaceIndex[expr,xAct`xTensor`Private`UltraindexOf[expr]->b];
-metric[a_,Dir[expr_]]:=ReplaceIndex[expr,xAct`xTensor`Private`UltraindexOf[expr]->a];
-];
-
-(* Define epsilon tensor, with covariant indices. Do not protect symbol *)
-metric/:epsilonOrientation[metric,eoib[[1]]]=eoib[[2]];
-With[{epsilonname=GiveSymbol[epsilon,metric],
-inds=GetIndicesOfVBundle[vbundle,If[integerdimQ,If[inducedQ,dim-1,dim],2]]},
-DefTensor[epsilonname@@(ChangeIndex/@inds),deps,Antisymmetric@Range@Length@inds,
-PrintAs:>GiveOutputString[epsilon,metric],
-ProtectNewSymbol->False,
-Master->metric,
-OrthogonalTo:>If[inducedQ,{vector[First[inds]]},{}],
-ProjectedWith:>If[inducedQ,{metric[-DummyIn[vbundle],First[inds]]},{}],
-DefInfo:>If[info===False,False,{"antisymmetric tensor",""}],
-TensorID->{epsilon,metric}];
-If[Not@integerdimQ && Not@inducedQ,
-TagSetDelayed[epsilonname,SymmetryGroupOfTensor[epsilonname[inds1__]],Antisymmetric[Range@Length@{inds1}]];
-TagUnset[epsilonname,SymmetryGroupOfTensor[epsilonname]];
-TagSetDelayed[epsilonname,SymmetryGroupOfTensor[epsilonname],Antisymmetric[Range@DimOfVBundle@vbundle]]
-];
-
-(* Products of two epsilons. In the induced and frozen cases expansions give metric and not delta *)
-If[inducedQ ||frozenQ,
-epsilonname/:epsilonname[inds1__]epsilonname[inds2__]:=SignDetOfMetric[metric]expandGdelta[metric][inds1,inds2],
-epsilonname/:epsilonname[inds1__]epsilonname[inds2__]:=SignDetOfMetric[metric]ExpandGdelta[Gdelta[inds1,inds2]]
-];
-
-(* Derivatives of epsilon. Note that we have not yet defined covd (!?) *)
-If[frozenQ,
-covd[a_][epsilonname[(-b_?vbQ)..]]^=0,
-covd[a_][epsilonname[b__?vbpmQ]]^=0
-];
-TensorDerivative[epsilonname,covd,___]:=Zero;
-If[!inducedQ,
-If[!frozenQ,
-epsilonname/:LieD[v_][epsilonname[inds1__?UpIndexQ]]:=Module[{dummy=DummyIn[vbundle]},-covd[-dummy][ReplaceIndex[v,{UltraindexOf[v]->dummy}]epsilonname[inds1]]]
-];
-epsilonname/:LieD[v_][epsilonname[inds1__?DownIndexQ]]:=Module[{dummy=DummyIn[vbundle]},covd[-dummy][ReplaceIndex[v,{UltraindexOf[v]->dummy}]epsilonname[inds1]]];
-epsilonname/:TensorDerivative[epsilonname,LieD[vhead_?xTensorQ[_]]]:=With[{dummy=DummyIn[vbundle]},MultiplyHead[TensorDerivative[vhead,covd][dummy,-dummy],epsilonname]];
-];
-
-(* Special relation in 2d, valid for all types of indices *)
-If[dim===2&&firstQ,
-epsilonname[a_,b_]epsilonname[c_,d_]^=SignDetOfMetric[metric] (metric[a,c]metric[b,d]-metric[a,d]metric[b,c]);
-];
-
-(* Define Tetra, only in dimension 4. This is an algebraic construction, hence valid for frozen metrics *) 
-If[dim==4,
-With[{TetraName=GiveSymbol[Tetra,metric]},
-Module[{i1,i2,i3,i4},
-{i1,i2,i3,i4}=GetIndicesOfVBundle[vbundle,4];
-DefTensor[TetraName[-i1,-i2,-i3,-i4],deps,GenSet[xAct`xPerm`Cycles[{1,2},{3,4}],xAct`xPerm`Cycles[{1,3},{2,4}]],
-Dagger->Complex,
-PrintAs:>GiveOutputString[Tetra,metric],
-Master->metric,
-ProtectNewSymbol->False,
-DefInfo:>If[info===False,False,{"tetrametric",""}]
-];
-TetraRule[metric]^:=MakeRule[{TetraName[i1,i2,i3,i4],I/2epsilonOrientation[metric,AIndex]epsilonname[i1,i2,i3,i4]+metric[i1,i4]metric[i2,i3]/2-metric[i1,i3]metric[i2,i4]/2+metric[i1,i2]metric[i3,i4]/2},Evaluate->True];
-With[{TetraNamedag=Dagger[TetraName]},
-TetraNamedag[i1_,i2_,i3_,i4_]:=TetraName[i1,i4,i3,i2]
-]
-];
-If[$ProtectNewSymbols,Protect[TetraName,Evaluate[Dagger@TetraName]]]
-]
-];
-
-If[$ProtectNewSymbols,Protect[epsilonname]]
-];
-
-(* Self-contractions. Transformation to delta or metric for A-indices contraction of two metrics (this could be generalized). Projectors not automatically converted into delta *)
-If[frozenQ,
-(*********************************************************************************************************************************************)
-(****** xMAG MODIFICATION : If metric is frozen metric with mixed indices is also passed to delta *****)
-(**********************************************************************************************************************************************)
-metric/:metric[a_?UpIndexQ,b_?DownIndexQ]:=delta[b,a];
-metric/:metric[a_?DownIndexQ,b_?UpIndexQ]:=delta[a,b];
-invmetric/:invmetric[a_?UpIndexQ,-b_Symbol]:=delta[-b,a];
-invmetric/:invmetric[-a_Symbol,b_?UpIndexQ]:=delta[-a,b];
-invmetric/:metric[a_,-b_?vbQ]invmetric[b_?EIndexQ,c_]:=metric[a,c];
-invmetric/:metric[-b_?vbQ,a_]invmetric[b_?EIndexQ,c_]:=metric[a,c];
-invmetric/:metric[a_,-b_?vbQ]invmetric[c_,b_?EIndexQ]:=metric[a,c];
-invmetric/:metric[-b_?vbQ,a_]invmetric[c_,b_?EIndexQ]:=metric[a,c];
-invmetric/:metric[a_,b_?vbQ]invmetric[-b_?EIndexQ,c_]:=metric[a,c];
-invmetric/:metric[b_?vbQ,a_]invmetric[-b_?EIndexQ,c_]:=metric[a,c];
-invmetric/:metric[a_,b_?vbQ]invmetric[c_,-b_?EIndexQ]:=metric[a,c];
-invmetric/:metric[b_?vbQ,a_]invmetric[c_,-b_?EIndexQ]:=metric[a,c],
-Inv[metric]^=metric;
-If[inducedQ,
-metric[a_?vbQ,-a_?EIndexQ]:=dim-1;
-metric[-a_?vbQ,a_?EIndexQ]:=dim-1
-];
-If[firstQ,
-metric[a_?UpIndexQ,b_?DownIndexQ]:=delta[b,a];
-metric[a_?DownIndexQ,b_?UpIndexQ]:=delta[a,b]
-];
-HoldPattern[metric[a_,b_?vbQ]metric[-b_?EIndexQ,c_]]^:=metric[a,c];
-HoldPattern[metric[a_,b_?vbQ]metric[c_,-b_?EIndexQ]]^:=metric[a,c];
-HoldPattern[metric[b_?vbQ,a_]metric[-b_?EIndexQ,c_]]^:=metric[a,c];
-HoldPattern[metric[b_?vbQ,a_]metric[c_,-b_?EIndexQ]]^:=metric[a,c];
-];
-
-(* Define covariant derivative(s). Do not protect symbol *)
-If[flatPD,
-(* Flat metric with PD. Derivative already defined *)
-Print["** DefMetric: Associating fiducial flat derivative PD to metric."];
-Unprotect[PD];
-MetricOfCovD[PD]^=metric;
-PD[c_][metric[a_?vbpmQ,b_?vbpmQ]]^=0;
-metric/:TensorDerivative[metric,PD]:=Zero;
-If[!frozenQ,
-(* Place rule for this metric second, after the general rule for lower indices *)
-AppendTo[$SortPDsRules,PD[b_?vbpmQ][PD[a_?vbpmQ][expr1_]]:>PD[a][PD[b][expr1]]/;DisorderedPairQ[a,b]]
-],
-(* Other cases. Define derivative. For a frozen metric the associated tensors are wrong! TODO *)
-If[frozenQ,
-DefCovDFrozen[covd[-ind1],covdsymbol,
-FromMetric->metric,
-Curvature:>Not[flat],
-OtherDependencies->odeps,
-OrthogonalTo:>If[inducedQ,{vector[ind1]},{}],
-ProjectedWith:>If[inducedQ,{metric[ind1,-ind2]},{}],
-Master->metric,
-ProtectNewSymbol->False,
-DeleteCases[{options},_[PrintAs,_]]
-],
-DefCovD[covd[-ind1],covdsymbol,
-FromMetric->metric,
-Curvature:>Not[flat],
-OtherDependencies->odeps,
-OrthogonalTo:>If[inducedQ,{vector[ind1]},{}],
-ProjectedWith:>If[inducedQ,{metric[ind1,-ind2]},{}],
-Master->metric,
-ProtectNewSymbol->False,
-DeleteCases[{options},_[PrintAs,_]]
-]
-]];
-InducedCovDQ[covd]=inducedQ;
-(* Torsion. TODO: modify the covdsymbol in the LCmetric *)
-LCmetric=If[TorsionQ[covd],LC[metric],covd];
-If[!CovDQ[LCmetric],
-DefCovD[LCmetric[-ind1],covdsymbol,
-FromMetric->metric,
-Torsion->False,
-Curvature->True,
-OtherDependencies->odeps,
-OrthogonalTo:>If[inducedQ,{vector[ind1]},{}],
-ProjectedWith:>If[inducedQ,{metric[ind1,-ind2]},{}],
-Master->metric,
-ProtectNewSymbol->False,
-DeleteCases[{options},_[PrintAs,_]]
-]
-];
-metric/:CovDOfMetric[metric,Torsion[covd]]=covd;
-metric/:CovDOfMetric[metric,Torsion[LCmetric]]=LCmetric;
-metric/:CovDOfMetric[metric,Zero]=LCmetric;
-metric/:LC[metric]=LCmetric;
-
-If[flatPD,Protect[PD]];
-If[$ProtectNewSymbols,Protect[covd]];
-
-(* Derivatives of the metric are defined in DefCovD *)
-(* Other covariant derivatives on the metric with upstairs abstract indices *)
-If[!inducedQ,
-invmetric/:HoldPattern[der_?FirstDerQ[invmetric[b_?vbQ,c_?vbQ]]]:=Module[{b1=DummyIn[vbundle],c1=DummyIn[vbundle]},-invmetric[b,b1]invmetric[c,c1]der[metric[-b1,-c1]]]];
-(* There is no simple generalization for induced metrics.
-QUESTION: Is there an equivalent rule for the epsilon tensor?*)
-
-(* Determinant in the basis AIndex. Has to be defined after the covd and the invmetric *)
-If[info===False,
-Block[{$DefInfoQ=False},Determinant[metric,AIndex][]],
-Determinant[metric,AIndex][]
-];
-
-(* Define induced metric *)
-If[inducedQ,xAct`xTensor`Private`DefInducedMetric[metric[-ind1,-ind2],{manifold},covd,{vector,supermetric,CovDOfMetric[supermetric]},flat]];
-
-(* Store conformal relations *)
-If[confto=!=Null,
-SetConformalTo[metric[-ind1,-ind2],confto]
-(*SetConformalToNew[metric,{Head[confto[[1]]],confto[[2]]}]*)
-];
-
-MakexTensions[DefMetric,"End",signdet,metric[-ind1,-ind2],covd,options];
-
-On[OptionValue::nodef];
-
-If[pns,Protect[metric]];
-]
-]
-];
-DefMetric[_,metric_,_,OptionsPattern[]]:=Message[DefMetric::invalid,metric,"metric"];
-SetNumberOfArguments[DefMetric,{3,Infinity}];
-Protect[DefMetric];
-On[RuleDelayed::rhs];
-
-
-(* ::Input::Initialization:: *)
-DefCovDFrozen[covd_[ind_],symbol:{_String,_String},options___]:=DefCovDFrozen[covd[ind],VBundleOfIndex[ind],SymbolOfCovD->symbol,options];
-DefCovDFrozen[covd_[ind_],vbundles_,symbol:{_String,_String},options___]:=DefCovDFrozen[covd[ind],vbundles,SymbolOfCovD->symbol,options];
-DefCovDFrozen[covd_[ind_],options___?OptionQ]:=DefCovDFrozen[covd[ind],VBundleOfIndex[ind],options];
-
-
-(* ::Input::Initialization:: *)
-Options[DefCovDFrozen]={
-SymbolOfCovD->{";","\[EmptyDownTriangle]"},
-Torsion->False,
-Curvature->True,
-FromMetric->Null,
-CurvatureRelations->True,
-ExtendedFrom->Null,
-OtherDependencies->{},
-OrthogonalTo->{},
-ProjectedWith->{},
-WeightedWithBasis->Null,
-ProtectNewSymbol:>$ProtectNewSymbols,
-Master->Null,
-DefInfo->{"covariant derivative",""}};
-DefCovDFrozen[covd_[ind_],vbundles_,options:OptionsPattern[]]:=
-Catch@(If[Not[AIndexQ[ind]&&DownIndexQ[ind]],Throw[Message[DefCovD::invalid,"covariant abstract-index",ind]]];
-With[{tbundle=VBundleOfIndex[ind],manifold=BaseOfVBundle@VBundleOfIndex[ind]},
-Module[{allbundles,symbol,torsion,curvature,metric,curvrels,ef,odeps,wwb,pns,master,info,ot,pw,curvedbundles},
-
-(* Options *)
-{symbol,torsion,curvature,metric,curvrels,ot,pw,ef,odeps,wwb,pns,master,info}=OptionValue[{SymbolOfCovD,Torsion,Curvature,FromMetric,CurvatureRelations,OrthogonalTo,ProjectedWith,ExtendedFrom,OtherDependencies,WeightedWithBasis,ProtectNewSymbol,Master,DefInfo}];
-ot=Flatten[{ot},1];
-pw=Flatten[{pw},1];
-
-(* Checks *)
-allbundles=DeleteDuplicates@Flatten[{tbundle,vbundles,Dagger/@{vbundles}}];
-curvedbundles=xAct`xTensor`Private`DefCovDCheck[covd,manifold,allbundles,symbol,{torsion,curvature,metric,curvrels,ef,odeps,wwb}];
-
-(* Register *)
-xAct`xTensor`Private`MakeDefInfo[DefCovD,covd[ind],info];
-CovDQ[covd]^=True;
-AppendToUnevaluated[$CovDs,covd];
-SymbolOfCovD[covd]^=symbol;
-ManifoldOfCovD[covd]^=manifold;
-VBundlesOfCovD[covd]^=allbundles;
-DependenciesOfCovD[covd]^=xAct`xTensor`Private`SortDependencies@Join[{manifold},odeps];
-TorsionQ[covd]^=torsion;
-TagSet[covd,CurvatureQ[covd,#],True]&/@curvedbundles;
-TagSet[covd,CurvatureQ[covd,#],False]&/@Complement[allbundles,curvedbundles];
-MetricOfCovD[covd]^=metric;
-WeightedWithBasis[covd]^=wwb;
-MasterOf[covd]^=metric;
-xAct`xTensor`Private`SymbolRelations[covd,master,If[ef===Null,{manifold},{manifold,ef}]];
-DefInfo[covd]^=info;
-
-(**** Define derivative operator ****)
-xAct`xTensor`Private`MakeLinearDerivative[covd,ot==={}];
-xAct`xTensor`Private`MakeTensorialDerivative[covd];
-If[ot=!={},xAct`xTensor`Private`MakeOrthogonalDerivative[covd,First[pw],First[ot]]];
-If[pw=!={},xAct`xTensor`Private`MakeProjectedDerivative[covd,First[pw],First[ot]]];
-
-(* Define curvature tensors and other properties *)
-If[info=!=False,info=$DefInfoQ];
-defcovdTangentFrozen[covd,tbundle,{torsion,CurvatureQ[covd,tbundle],metric,curvrels},{ot,pw,info}];
-
-If[pns,Protect[covd]];
-]
-]);
-
-
-(* ::Input::Initialization:: *)
-defcovdTangentFrozen[covd_,tbundle_,{torQ_,curvQ_,metric_,curvrels_},{ov_,pw_,info_}]:=With[
-(* Reinterpretation of input *)
-{indexlist=GetIndicesOfVBundle[tbundle,9],
-dim=If[pw==={},DimOfVBundle[tbundle],DimOfVBundle[tbundle]-1],
-metricQ=(metric=!=Null),
-orthogonalQ=(ov=!={}),
-projectedQ=(pw=!={}),
-endowedQ=MetricEndowedQ[tbundle],
-frozenQ=If[metric=!=Null,FrozenMetricQ[metric],False]},
-With[
-(* Secondary definitions *)
-{tbQ=xAct`xTensor`Private`VBundleIndexQ[tbundle],
-tbpmQ=xAct`xTensor`Private`VBundleIndexPMQ[tbundle],
-invmetric=If[metricQ,If[frozenQ,GiveSymbol[Inv,metric],metric],False],
-TorsionName=GiveSymbol[Torsion,covd],
-ChristoffelName=GiveSymbol[Christoffel,covd],
-RiemannName=GiveSymbol[Riemann,covd],
-RiemannDownName=If[metricQ,GiveSymbol[If[frozenQ,RiemannDown,Riemann],covd],$Failed],
-RicciName=GiveSymbol[Ricci,covd],
-WeylName=If[metricQ,GiveSymbol[Weyl,covd]],
-TFRicciName=If[metricQ,GiveSymbol[TFRicci,covd]],
-EinsteinName=If[metricQ,GiveSymbol[Einstein,covd]],
-RicciScalarName=If[metricQ,GiveSymbol[RicciScalar,covd]],
-KretschmannName=If[metricQ,GiveSymbol[Kretschmann,covd]],
-i1=indexlist[[1]],
-i2=indexlist[[2]],
-i3=indexlist[[3]],
-i4=indexlist[[4]],
-i5=indexlist[[5]],
-i1d=indexlist[[6]],
-i2d=indexlist[[7]],
-i3d=indexlist[[8]],
-i4d=indexlist[[9]],
-integerdimQ=IntegerQ[dim]},
-Module[{prot,vector,projector,tmp,vanishQ},
-(* 0. Check orthogonality and projections *)
-If[!endowedQ&&(projectedQ||orthogonalQ),Throw@Message[DefCovD::error,"xTensor cannot yet project in a vector bundle without metric."]];
-
-If[orthogonalQ,vector=ov[[1,0]]];
-If[projectedQ,projector=pw[[1,0]]];
-
-(* 1. Define torsion tensor *)
-vanishQ=!torQ;
-DefTensor[TorsionName[i1,-i2,-i3],DependenciesOfCovD[covd],Antisymmetric[{2,3}],
-PrintAs:>GiveOutputString[Torsion,covd],
-VanishingQ->vanishQ,
-Master->covd,
-OrthogonalTo:>If[orthogonalQ,{vector[-i1],vector[i2],vector[i3]},{}],
-ProjectedWith:>If[projectedQ,{projector[-i1,i1d],projector[i2,-i2d],projector[i3,-i3d]},{}],
-DefInfo:>If[info,{"torsion tensor",""},False],
-TensorID->{Torsion,covd}];
-
-(* 2. Define Christoffel tensor relating covd to PD. Always nonzero *)
-DefTensor[ChristoffelName[i1,-i2,-i3],DependenciesOfCovD[covd],If[torQ,StrongGenSet[{},GenSet[]],Symmetric[{2,3}]],
-PrintAs:>GiveOutputString[Christoffel,covd],
-Master->covd,
-OrthogonalTo:>If[orthogonalQ,{vector[-i1],vector[i2],vector[i3]},{}],
-ProjectedWith:>If[projectedQ,{projector[-i1,i1d],projector[i2,-i2d],projector[i3,-i3d]},{}],
-DefInfo:>If[info,{If[torQ,"non-symmetric ","symmetric "]<>"Christoffel tensor",""},False],
-TensorID->{Christoffel,covd,PD}];
-AppendTo[xAct`xTensor`Private`$Christoffels,{ChristoffelName,{Christoffel,covd,PD},{tbundle}}];
-
-(* 3. Automatic commutativity of scalars, even if there is torsion. Only for covariant derivatives with abstract indices *)
-(* CovDTODO *)
-covd[-b_?tbQ][covd[-a_?tbQ][scalar_?xTensorQ[]]]:=covd[-a][covd[-b][scalar[]]]+$TorsionSign Module[{dummy=DummyIn[tbundle]},TorsionName[dummy,-a,-b]covd[-dummy][scalar[]]]/;$CommuteCovDsOnScalars&&DisorderedPairQ[a,b];
-(** 3.b : Composition **)
-covd[a_]@(f_?ScalarFunctionQ[args___]):=xAct`xTensor`Private`multiD[covd[a],f[args]];
-
-(* 4. Metric compatibility *)
-(* CovDTODO *)
-If[metricQ,
-If[frozenQ,
-covd[a_][invmetric[b_Symbol?tbQ,c_Symbol?tbQ]]:=0;
-covd[a_][metric[-b_Symbol?tbQ,-c_Symbol?tbQ]]:=0;
-covd/:TensorDerivative[invmetric,covd,___]:=Zero;
-covd/:TensorDerivative[metric,covd,___]:=Zero,
-covd[a_][metric[b_?tbpmQ,c_?tbpmQ]]:=0;
-covd/:TensorDerivative[metric,covd,___]:=Zero
-]
-];
-
-(* 5. Only if there is a metric and no torsion the RiemannDown tensor has its full symmetries : Why do we need to define RiemannDown ??? *)
-vanishQ=!curvQ||If[integerdimQ,dim<2,False];
-If[metricQ,
-DefTensor[RiemannDownName[-i1,-i2,-i3,-i4],DependenciesOfCovD[covd],If[torQ,JoinSGS[Antisymmetric[{1,2}],Antisymmetric[{3,4}]],RiemannSymmetric[{1,2,3,4}]],
-PrintAs:>GiveOutputString[If[frozenQ,RiemannDown,Riemann],covd],
-VanishingQ->vanishQ,
-Master->covd,
-OrthogonalTo:>If[orthogonalQ,{vector[i1],vector[i2],vector[i3],vector[i4]},{}],
-ProjectedWith:>If[projectedQ,{projector[i1,-i1d],projector[i2,-i2d],projector[i3,-i3d],projector[i4,-i4d]},{}],
-DefInfo:>If[info,{"Riemann tensor",If[torQ,"Antisymmetric pairs cannot be exchanged.",""]},False],
-TensorID->{Riemann,covd}]];
-If[metricQ&&frozenQ,
-DefTensor[RiemannName[-i1,-i2,-i3,i4],DependenciesOfCovD[covd],If[torQ,JoinSGS[Antisymmetric[{1,2}],Antisymmetric[{3,4}]],RiemannSymmetric[{1,2,3,4}]],ForceSymmetries->True,
-PrintAs:>GiveOutputString[Riemann,covd],
-VanishingQ->vanishQ,
-Master->covd,
-OrthogonalTo:>If[orthogonalQ,{vector[i1],vector[i2],vector[i3],vector[-i4]},{}],
-ProjectedWith:>If[projectedQ,{projector[i1,-i1d],projector[i2,-i2d],projector[i3,-i3d],projector[-i4,i4d]},{}],
-DefInfo:>If[info,{"Riemann tensor",If[curvQ,"Antisymmetric only in the first pair.",""]},False],
-TensorID->{Riemann,covd}];
-RiemannName/:RiemannName[i1_,i2_,-i3_,i3_]:=0;
-RiemannName/:RiemannName[i1_,i2_,i3_,-i3_]:=0;
-];
-
-(* 6. Only if there is a metric and no torsion the Ricci tensor is symmetric *)
-vanishQ=!curvQ||If[integerdimQ,dim<2,False];
-DefTensor[RicciName[-i1,-i2],DependenciesOfCovD[covd],If[metricQ&&!torQ,Symmetric[{1,2}],StrongGenSet[{},GenSet[]]],
-PrintAs:>GiveOutputString[Ricci,covd],
-VanishingQ->vanishQ,
-Master->covd,
-OrthogonalTo:>If[orthogonalQ,{vector[i1],vector[i2]},{}],
-ProjectedWith:>If[projectedQ,{projector[i1,-i1d],projector[i2,-i2d]},{}],
-DefInfo:>If[info,{If[vanishQ,"",If[metricQ&&!torQ,"symmetric ","non-symmetric "]]<>"Ricci tensor",""},False],
-TensorID->{Ricci,covd}];
-If[!vanishQ,
-covd/:CurvatureRelations[covd,Riemann]=MakeRule[{RiemannName[-i1,-i2,-i3,i2],$RicciSign RicciName[-i1,-i3]},MetricOn->None,UseSymmetries->False,ContractMetrics->False];
-If[curvrels,
-If[info,Print["** DefCovD:  Contractions of Riemann automatically replaced by Ricci."]];
-prot=Unprotect[RiemannName];
-AutomaticRules[RiemannName,CurvatureRelations[covd,Riemann],Verbose->False];
-Protect[Evaluate[prot]];
-]
-];
-
-(* 7. The Ricci scalar  *)
-If[metricQ,
-vanishQ=!curvQ||If[integerdimQ,dim<2,False];
-DefTensor[RicciScalarName[],DependenciesOfCovD[covd],
-PrintAs:>GiveOutputString[Ricci,covd],
-VanishingQ->vanishQ,
-Master->covd,
-DefInfo:>If[info,{"Ricci scalar",""},False],
-TensorID->{RicciScalar,covd}];
-If[!vanishQ,
-covd/:CurvatureRelations[covd,Ricci]=SafeMakeRule[{invmetric[i1,i2]RicciName[-i1,-i2],RicciScalarName[]}];
-If[curvrels,
-If[info,Print["** DefCovD:  Contractions of Ricci automatically replaced by RicciScalar."]];
-prot=Unprotect[RicciName];
-AutomaticRules[RicciName,CurvatureRelations[covd,Ricci],Verbose->False];
-Protect[Evaluate[prot]];
-]
-]
-];
-(* 8. The Einstein tensor  *)
-If[metricQ,
-vanishQ=!curvQ||If[integerdimQ,dim<3,False];
-DefTensor[EinsteinName[-i1,-i2],DependenciesOfCovD[covd],If[torQ,StrongGenSet[{},GenSet[]],Symmetric[{1,2}]],
-PrintAs:>GiveOutputString[Einstein,covd],
-VanishingQ->vanishQ,
-Master->covd,
-OrthogonalTo:>If[orthogonalQ,{vector[i1],vector[i2]},{}],
-ProjectedWith:>If[projectedQ,{projector[i1,-i1d],projector[i2,-i2d]},{}],
-DefInfo:>If[info,{If[vanishQ,"",If[torQ,"non-symmetric ","symmetric "]]<>"Einstein tensor",""},False],
-TensorID->{Einstein,covd}];
-If[!vanishQ,
-prot=Unprotect[invmetric];
-AutomaticRules[invmetric,SafeMakeRule[{invmetric[i2,i3]covd[-i3][EinsteinName[-i1,-i2]],$TorsionSign invmetric[i2,i3]RicciName[-i4,-i2]TorsionName[i4,-i1,-i3]-$TorsionSign $RicciSign/2 invmetric[i2,i3]RiemannName[-i1,-i4,-i2,i5]TorsionName[i4,-i3,-i5]}],Verbose->False];
-Protect[Evaluate[prot]];
-]
-];
-(* 9. We define the Weyl tensor : here the Weyl tensor is defined with the last index up *)
-If[metricQ,
-(* Weyl *)
-vanishQ=!curvQ||If[integerdimQ,dim<4,False];
-DefTensor[WeylName[-i1,-i2,-i3,i4],DependenciesOfCovD[covd],If[torQ,JoinSGS[Antisymmetric[{1,2}],Antisymmetric[{3,4}]],RiemannSymmetric[{1,2,3,4}]],ForceSymmetries->True,TraceFree->{-i1,-i2,-i3,i4},
-PrintAs:>GiveOutputString[Weyl,covd],
-VanishingQ->vanishQ,
-Master->covd,
-OrthogonalTo:>If[orthogonalQ,{vector[i1],vector[i2],vector[i3],vector[-i4]},{}],
-ProjectedWith:>If[projectedQ,{projector[i1,-i1d],projector[i2,-i2d],projector[i3,-i3d],projector[-i4,i4d]},{}],
-DefInfo:>If[info,{"Weyl tensor",If[torQ,"Antisymmetric pairs cannot be exchanged.",""]},False],
-TensorID->{Weyl,covd}]
-];
-(* 10. TFRicci for metric connections, even with torsion *)
-If[metricQ,
-vanishQ=!curvQ||If[integerdimQ,dim<3,False];
-DefTensor[TFRicciName[-i1,-i2],DependenciesOfCovD[covd],If[torQ,StrongGenSet[{},GenSet[]],Symmetric[{1,2}]],TraceFree->{-i1,-i2},
-PrintAs:>GiveOutputString[TFRicci,covd],
-VanishingQ->vanishQ,
-Master->covd,
-OrthogonalTo:>If[orthogonalQ,{vector[i1],vector[i2]},{}],
-ProjectedWith:>If[projectedQ,{projector[i1,-i1d],projector[i2,-i2d]},{}],
-DefInfo:>If[info,{If[vanishQ,"",If[torQ,"non-symmetric ","symmetric "]]<>"TFRicci tensor",""},False],
-TensorID->{TFRicci,covd}];
-];
-(* 10b. Kretschmann for metric connections, even with torsion *)
-If[metricQ,
-vanishQ=!curvQ;
-DefTensor[KretschmannName[],DependenciesOfCovD[covd],
-PrintAs:>GiveOutputString[Kretschmann,covd],
-VanishingQ->vanishQ,
-Master->covd,
-DefInfo:>If[info,{"Kretschmann scalar",""},False],
-TensorID->{Kretschmann,covd}];
-];
-
-(* 11. Riemann versus Weyl ( we use xBrauer functions ToTracelessTensor and ToTraceTensor : problem with $RicciSign ? ) *)
-RiemannToWeylRules[covd]=If[curvQ&&metricQ&&If[integerdimQ,dim>1,True],If[info,Print["** DefCovD:  Computing RiemannToWeylRules for dim ",dim]];
-Which[
-dim===2,
-SafeMakeRule[{RiemannName[-i1,-i2,-i3,i4],$RicciSign RicciScalarName[](metric[-i1,-i3]delta[-i2,i4]-delta[-i1,i4]metric[-i2,-i3])/2}],
-dim===3,SafeMakeRule[{RiemannName[-i1,-i2,-i3,i4],$RicciSign (metric[-i1,-i3]invmetric[i4,i5]RicciName[-i2,-i5]+delta[-i2,i4]RicciName[-i1,-i3]-delta[-i1,i4]RicciName[-i2,-i3]-metric[-i2,-i3]invmetric[i4,i5]RicciName[-i1,-i5])/(dim-2)-$RicciSign RicciScalarName[](metric[-i1,-i3]delta[-i2,i4]-delta[-i1,i4]metric[-i2,-i3])/(dim-1)/(dim-2)}],
-True,
-SafeToRule[RiemannName[-i1,-i2,-i3,i4]==Collect[WeylName[-i1,-i2,-i3,i4]+
-										ToTracelessTensor[RiemannName[-i1,-i2,-i3,i4],2,metric]+ToTraceTensor[RiemannName[-i1,-i2,-i3,i4],2,metric],{_metric,_invmetric,_delta,_WeylName,_RicciName,_ RicciScalarName},Factor]]
-],
-{}];
-WeylToRiemannRules[covd]=If[If[integerdimQ,dim>=4,True]&&metricQ&&curvQ,SafeToRule[WeylName[-i1,-i2,-i3,i4]==Collect[ToTracelessTensor[RiemannName[-i1,-i2,-i3,i4],1,metric],{_metric,_invmetric,_delta,_RiemannName,_RicciName,_RicciScalarName},Factor]],
-{}];
-(** We leave these Rules but i don't know what are there purposes **)
- xAct`xTensor`Private`RiemannToRiemannDownRules[covd]=If[metricQ&&frozenQ&&curvQ,MakeRule[{RiemannName[i1,i2,i3,i4],RiemannDownName[i1,i2,i3,-i1d]invmetric[i1d,i4]},MetricOn->All,TestIndices->False,ContractMetrics->True],
-{}];
- xAct`xTensor`Private`RiemannDownToRiemannRules[covd]=If[metricQ&&curvQ,MakeRule[{RiemannDownName[i1,i2,i3,i4],RiemannName[i1,i2,i3,i1d]metric[-i1d,i4]},MetricOn->All,TestIndices->False,ContractMetrics->True],
-{}];
-(* 12. Ricci versus TFRicci. QUESTION: Are dimensions right when orthogonalQ or projectedQ? *)
-RicciToTFRicciRules[covd]=If[curvQ&&metricQ&&If[integerdimQ,dim>1,True],If[info,Print["** DefCovD:  Computing RicciToTFRicci for dim ",dim]];
-Which[
-dim===2,
-SafeMakeRule[{RicciName[-i1,-i2],RicciScalarName[]metric[-i1,-i2]/2}],True,
-SafeToRule[RicciName[-i1,-i2]==(TFRicciName[-i1,-i2]+ToTraceTensor[RicciName[-i1,-i2],1,metric])]
-],
-{}];
-TFRicciToRicciRules[covd]=If[If[integerdimQ,dim>=3,True]&&metricQ&&curvQ,
-SafeToRule[TFRicciName[-i1,-i2]==(ToTracelessTensor[TFRicciName[-i1,-i2],1,metric])],
-{}];
-
-(* 13. Ricci versus Einstein *)
-xAct`xTensor`Private`RicciToEinsteinRules[covd]=
-If[curvQ&&metricQ&&If[integerdimQ,dim>1,True],
-If[info,Print["** DefCovD:  Computing RicciToEinsteinRules for dim ",dim]];
-Which[
-dim===2,
-SafeMakeRule[{RicciName[-i1,-i2],metric[-i1,-i2]/2RicciScalarName[]},MetricOn->All,TestIndices->False,ContractMetrics->True],
-True,
-SafeMakeRule[{RicciName[-i1,-i2],EinsteinName[-i1,-i2]+metric[-i1,-i2]/2RicciScalarName[]},MetricOn->All,TestIndices->False,ContractMetrics->True]
-],
-{}];
-xAct`xTensor`Private`EinsteinToRicciRules[covd]=If[If[integerdimQ,dim>=3,True]&&metricQ&&curvQ,SafeMakeRule[{EinsteinName[-i1,-i2],RicciName[-i1,-i2]-metric[-i1,-i2]/2*RicciScalarName[]}],{}];
-]
-]
-]
-
-
-(* ::Input::Initialization:: *)
-ConformalTransform[exp_,met_?MetricQ,confmet_?MetricQ]:=Module[{covdmet=CovDOfMetric[met],covdconfmet=CovDOfMetric[confmet],TM=VBundleOfMetric[met],res},
-(** We modify the canonical slots of Riemann tensor for the first metric **)
-If[First[$Metrics]===met,
-SlotsOfTensor[Riemann[covdmet]]^:={-TM,-TM,-TM,TM}];
-If[First[$Metrics]===confmet,
-SlotsOfTensor[Riemann[covdconfmet]]^:={-TM,-TM,-TM,TM}];
-If[First[$Metrics]=!=confmet,
-Return[CollectTensors[(SeparateMetric[met][FixedPoint[BreakChristoffel,ChangeCovD[exp,covdmet,covdconfmet]]])/.ConformalRules[met,confmet],{CollectMethod->SafeCanonical}],Module],
-Return[CollectTensors[(SeparateMetric[met][FixedPoint[BreakChristoffel,ChangeCovD[exp,covdmet,covdconfmet]]])/.ConformalRules[met,confmet]],Module]
-]
-];
-
-
-(* ::Input::Initialization:: *)
-Bimetric::nomet="There is no metric associated to `1`.";
-
-
-(* ::Input::Initialization:: *)
-Unprotect[MasterOf];
-SetNumberOfArguments[MasterOf,1,2]
-MasterOf[tensor_?xTensorQ,num_?IntegerQ]:=Nest[MasterOf,tensor,num];
-Protect[MasterOf];
-
-
-(* ::Input::Initialization:: *)
-MetricOfTensor[met_?MetricQ]:=met;
-MetricOfTensor[delta]:=Null;
-MetricOfTensor[tensor_?xTensorQ]:=If[MetricQ[MasterOf[tensor]],MasterOf[tensor],If[MasterOf[tensor]===Null,$Metrics[[1]],If[CovDQ[MasterOf[tensor]]&&MasterOf[tensor,2]===Null,$Metrics[[1]],If[CovDQ[MasterOf[tensor]]&&MetricQ[MasterOf[tensor,2]],MasterOf[tensor,2]]]]];
-MetricOfTensor[tensor_?xTensorQ[inds__]]:=MetricOfTensor[tensor];
-
-
-(* ::Input::Initialization:: *)
-metricOfcovdtens[covd_?CovDQ[inds1__][tensor_?xTensorQ[inds2__]]]:=If[MasterOf[covd]===MetricOfTensor[tensor],MetricOfTensor[tensor],$Metrics[[1]]];
-metricOf[exp_]:=With[{metlist=DeleteCases[Join[MetricOfTensor/@FindAllOfType[exp,Tensor],metricOfcovdtens/@FindAllOfType[exp,CovD]],Null]},
-	If[Length[Union[metlist]]===1&&metlist=!={},metlist[[1]],$Metrics[[1]]]];
-
-
-(* ::Input::Initialization:: *)
-(*** Correction of a small bug when we separate metric of an expression with covariant derivative and frozen metric : need to delete duplicate indices ***)
-SeparateMetric[metric_,basis_][expr_,list_IndexList]:=Fold[SeparateMetric[metric,basis],expr,DeleteDuplicates[DeleteCases[list,_LI|-_LI]]];
-
-(***************************************)
-(*** Modification of SeparateMetric1 ***)
-(***************************************)
-
-(*** For induced metric ****)
-xAct`xTensor`Private`SeparateMetric1[basis_,metric_,metric1_][expr_,index_]=.;
-xAct`xTensor`Private`SeparateMetric1[basis_,metric_?InducedMetricQ,metric1_][expr_,index_]:=xAct`xTensor`Private`SeparateMetric2[basis,metric][expr,index]/;VBundleOfMetric[metric]===VBundleOfIndex[index];
-(*** We add the definition for frozen metric which has recently been removed from xTensor ***)
-xAct`xTensor`Private`SeparateMetric1[basis_,frozen_?FrozenMetricQ,metric1_][expr_,index_]:=xAct`xTensor`Private`SeparateMetric2[basis,frozen][expr,index]/;VBundleOfMetric[frozen]===VBundleOfMetric[metric1];
-
-(***************************************)
-(*** Modification of SeparateMetric2 ***)
-(***************************************)
-xAct`xTensor`Private`SeparateMetric2[basis_,metric_][expr_,index_]:=expr/.{tensor_?xTensorQ[i1___,index,i2___]:>With[{dummy=DummyAs[index,basis]},If[(MetricOfTensor[tensor]===metric||(MetricOfTensor[tensor]===Null&&FirstMetricQ[metric])),If[UpIndexQ[index],metric[index,dummy],metric[dummy,index]]tensor[i1,ChangeIndex[dummy],i2],tensor[i1,index,i2]]],covd_?CovDQ[i1___,index,i2___][expr1_]:>With[{dummy=DummyAs[index,basis]},If[MasterOf[covd]===metric,If[UpIndexQ[index],metric[index,dummy],metric[dummy,index]]covd[i1,ChangeIndex[dummy],i2][expr1],covd[i1,index,i2][expr1]]]};
-
-(*** New definition for frozen metric ***)
-xAct`xTensor`Private`SeparateMetric2[AIndex,metric_?FrozenMetricQ][metric_?FrozenMetricQ[-i1_Symbol,-i2_Symbol],index_]:=metric[-i1,-i2];
-xAct`xTensor`Private`SeparateMetric2[AIndex,metric_?FrozenMetricQ][metric_?FrozenMetricQ[i1_Symbol,i2_Symbol],index_]:=With[{a=DummyAs[i1],b=DummyAs[i2]},
-Inv[metric][a,i1]Inv[metric][b,i2]metric[-a,-b]];
-xAct`xTensor`Private`SeparateMetric2[AIndex,metric_?FrozenMetricQ][metric_?FrozenMetricQ[-i1_Symbol,-i2_Symbol],index_]:=metric[-i1,-i2];
-
-xAct`xTensor`Private`SeparateMetric2[basis_,metric_?xAct`xTensor`Private`FrozenMetricQ][expr_,index_]:=With[{imetric=Inv[metric]},expr/.{tensor_?xTensorQ[i1___,index,i2___]:>With[{dummy=DummyAs[index,basis]},If[MetricOfTensor[tensor]===metric,If[UpIndexQ[index],imetric[index,dummy],metric[dummy,index]]tensor[i1,ChangeIndex[dummy],i2],tensor[i1,index,i2]]],
-covd_?CovDQ[i1___,index,i2___][expr1_]:>With[{dummy=DummyAs[index,basis]},If[MasterOf[covd]===metric,If[UpIndexQ[index],imetric[index,dummy],metric[dummy,index]]covd[i1,ChangeIndex[dummy],i2][expr1],covd[i1,index,i2][expr1]]]}]
-
-(*** Separate Metric with Lie Derivative ***)
-SeparateMetric[metric_?MetricQ][LieD[nvec_?xTensorQ[ind_]][tensor_?xTensorQ[inds___]]]:=Module[{septens,tensor1,metriclist},
-septens=SeparateMetric[metric][tensor[inds]];
-If[septens===tensor[inds],Return[LieD[nvec[ind]][tensor[inds]],Module]];
-metriclist=FindAllOfType[septens,Metric];
-tensor1=Complement[FindAllOfType[septens,Tensor],metriclist][[1]];
-Times@@metriclist*LieD[nvec[ind]][SeparateMetric[metric][tensor1]]+LieD[nvec[ind]][Times@@metriclist]*tensor1];
-(*** SeparateMetric driver with option ***)
-SeparateMetric[][exp_]:=Fold[SeparateMetric[#2][#1]&,exp,$Metrics];
-SeparateMetric[exp_?(!MetricQ[#]&)]:=SeparateMetric[][exp];
-
-
-(* ::Input::Initialization:: *)
-ContractMetric::frozen="Cannot contract frozen metric `1`.";
-xAct`xTensor`Private`NormalVectorOf[metric_]:=Which[
-InducedFrom[metric]===Null,Null,
-InducedFrom[metric]=!=Null,VectorOfInducedMetric[metric]];
-
-
-(* ::Input::Initialization:: *)
-Unprotect[ContractMetric];
-ContractMetric[expr_,options___?OptionQ]:=ContractMetric[expr,$Metrics,options];
-Protect[ContractMetric];
-
-
-(* ::Input::Initialization:: *)
-(* Contractions inside first-derivatives with inverse metric *)
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. der_?FirstDerQ[expr_]met:invmetric_[b_,c_]]:=
-Module[{dm=der[met],result},
-If[(od||dm===0)&&xAct`xTensor`Private`differentexpressionsQ[result=CM[expr met],{expr,met}],
-CM[rest der[result]]-CM[rest dm expr],
-CM[rest met]der[expr]]
-]/;(MemberQ[FindFreeIndices[expr],ChangeIndex[c]|ChangeIndex[b]]&&Head[expr]=!=metric&&invmetric===Inv[metric]);
-
-
-(* ::Input::Initialization:: *)
-(* Contraction metric*der[metric] is left untouched to avoid infinite recursion *)
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. der_?FirstDerQ[metric_[a_,b_]]metric_[c_,d_]]=.
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. der_?FirstDerQ[metric_[a_,b_]]metric_[c_,d_]]:=CM[rest metric[c,d]]der[metric[a,b]]/;(PairQ[a,d]||PairQ[b,d]||PairQ[a,c]||PairQ[b,c]);
-
-
-(* ::Input::Initialization:: *)
-(*          Contraction of projector on an spatial tensor *)
-xAct`xTensor`Private`PRJ[nv_,tensor_?xTensorQ,indumetric_]:=If[MetricOfTensor[tensor]===indumetric,True,OrthogonalToVectorQ[nv][tensor]];
-(*          Contraction of projector through its Levi-Civita connection *)
-xAct`xTensor`Private`PRJ[nv_,covd_?CovDQ,indumetric_]:=If[MasterOf[covd]===indumetric,True,CovDOfMetric[indumetric]===covd];
-
-
-(* ::Input::Initialization:: *)
-(***************************************************************************************************************)	
-(************************ We overwrite ContractMetric1 private function of xTensor *****************************)
-(***************************************************************************************************************)	
-										
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. tensor_?xTensorQ[i1___,a_,i2___]metric_[b_,c_]]=.;
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. covdd_?CovDQ[i1___,a_,i2___][expr_]metric_[b_,c_]]=.;
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. prod_?ProductQ[left___,tensor_?xTensorQ[i1___,a_,i2___],right___]metric_[b_,c_]]=.;	
-
-(*** Copy paste from xtensor the code for induced metric ***)
-
-(*** New code for metric and frozen metric ***)
-
-(* Second index of metric *)
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. tensor_?xTensorQ[i1___,a_,i2___]metric_[b_,c_]]:=xAct`xTensor`Private`SMP[metric,c,a]CM[rest tensor[i1,b,i2]]/;PairQ[c,a]&&xAct`xTensor`Private`PRJ[nv,tensor,metric]&&(MetricOfTensor[tensor]===metric||(MetricOfTensor[tensor]===Null&&FirstMetricQ[metric]));
-
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. covd_?CovDQ[i1___,a_,i2___][expr_]metric_[b_,c_]]:=xAct`xTensor`Private`SMP[metric,c,a]CM[rest covd[i1,b,i2][expr]]/;PairQ[c,a]&&(aud||DownIndexQ[b])&&xAct`xTensor`Private`PRJ[nv,covd,metric]&&(MasterOf[covd]===metric||(MasterOf[covd]===Null&&FirstMetricQ[metric]));
-
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. prod_?ProductQ[left___,tensor_?xTensorQ[i1___,a_,i2___],right___]metric_[b_,c_]]:=xAct`xTensor`Private`SMP[metric,c,a]CM[rest prod[left,tensor[i1,b,i2],right]]/;PairQ[c,a]&&xAct`xTensor`Private`PRJ[nv,tensor,metric] &&ScalarsOfProduct[prod][metric[b,c]]&&(MetricOfTensor[tensor]===metric||(MetricOfTensor[tensor]===Null&&FirstMetricQ[metric]));
-
-(* First index of metric *)
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. tensor_?xTensorQ[i1___,a_,i2___]metric_[b_,c_]]:=xAct`xTensor`Private`SMP[metric,a,b]CM[rest tensor[i1,c,i2]]/;PairQ[a,b]&&xAct`xTensor`Private`PRJ[nv,tensor,metric]&&(MetricOfTensor[tensor]===metric||(MetricOfTensor[tensor]===Null&&FirstMetricQ[metric]));
-
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. covd_?CovDQ[i1___,a_,i2___][expr_]metric_[b_,c_]]:=xAct`xTensor`Private`SMP[metric,a,b]CM[rest covd[i1,c,i2][expr]]/;PairQ[a,b]&&(aud||DownIndexQ[c])&&xAct`xTensor`Private`PRJ[nv,covd,metric]&&(MasterOf[covd]===metric||(MasterOf[covd]===Null&&FirstMetricQ[metric]));
-
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. prod_?ProductQ[left___,tensor_?xTensorQ[i1___,a_,i2___],right___]metric_[b_,c_]]:=xAct`xTensor`Private`SMP[metric,a,b]CM[rest prod[left,tensor[i1,c,i2],right]]/;PairQ[a,b]&&xAct`xTensor`Private`PRJ[nv,tensor,metric] &&ScalarsOfProduct[prod][metric[b,c]&&(MetricOfTensor[tensor]===metric||(MetricOfTensor[tensor]===Null&&FirstMetricQ[metric]))];
-
-(*** Inverse Metric ***)
-
-(* Second index of metric *)
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. tensor_?xTensorQ[i1___,a_,i2___]invmetric_[b_,c_]]:=xAct`xTensor`Private`SMP[invmetric,c,a]CM[rest tensor[i1,b,i2]]/;PairQ[c,a]&&xAct`xTensor`Private`PRJ[nv,tensor,metric]&&invmetric===Inv[metric]&&(MetricOfTensor[tensor]===metric||(MetricOfTensor[tensor]===Null&&FirstMetricQ[metric]));
-
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. covd_?CovDQ[i1___,a_,i2___][expr_]invmetric_[b_,c_]]:=xAct`xTensor`Private`SMP[invmetric,c,a]CM[rest covd[i1,b,i2][expr]]/;PairQ[c,a]&&(aud||DownIndexQ[b])&&xAct`xTensor`Private`PRJ[nv,covd,metric]&&invmetric===Inv[metric]&&(MasterOf[covd]===metric||(MasterOf[covd]===Null&&FirstMetricQ[metric]));
-
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. prod_?ProductQ[left___,tensor_?xTensorQ[i1___,a_,i2___],right___]invmetric_[b_,c_]]:=xAct`xTensor`Private`SMP[invmetric,c,a]CM[rest prod[left,tensor[i1,b,i2],right]]/;PairQ[c,a]&&xAct`xTensor`Private`PRJ[nv,tensor,metric] &&ScalarsOfProduct[prod][metric[b,c]]&&invmetric===Inv[metric]&&(MetricOfTensor[tensor]===metric||(MetricOfTensor[tensor]===Null&&FirstMetricQ[metric]));
-
-(* First index of metric *)
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. tensor_?xTensorQ[i1___,a_,i2___]invmetric_[b_,c_]]:=xAct`xTensor`Private`SMP[invmetric,a,b]CM[rest tensor[i1,c,i2]]/;PairQ[a,b]&&xAct`xTensor`Private`PRJ[nv,tensor,metric]&&invmetric===Inv[metric]&&(MetricOfTensor[tensor]===metric||(MetricOfTensor[tensor]===Null&&FirstMetricQ[metric]));
-
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. covd_?CovDQ[i1___,a_,i2___][expr_]invmetric_[b_,c_]]:=xAct`xTensor`Private`SMP[invmetric,a,b]CM[rest covd[i1,c,i2][expr]]/;PairQ[a,b]&&(aud||DownIndexQ[c])&&invmetric===Inv[metric]&&xAct`xTensor`Private`PRJ[nv,covd,metric]&&(MasterOf[covd]===metric||(MasterOf[covd]===Null&&FirstMetricQ[metric]));
-
-(CM:xAct`xTensor`Private`ContractMetric1[{od_,aud_},{metric_,nv_}])[rest_. prod_?ProductQ[left___,tensor_?xTensorQ[i1___,a_,i2___],right___]invmetric_[b_,c_]]:=xAct`xTensor`Private`SMP[invmetric,a,b]CM[rest prod[left,tensor[i1,c,i2],right]]/;PairQ[a,b]&&xAct`xTensor`Private`PRJ[nv,tensor,metric] &&ScalarsOfProduct[prod][metric[b,c]]&&invmetric===Inv[metric]&&(MetricOfTensor[tensor]===metric||(MetricOfTensor[tensor]===Null&&FirstMetricQ[metric]));
-
-
-(* ::Input::Initialization:: *)
-(***** CoRicci *****)
-changeCoRicci[covd1_?NonMetricityQ,covd2_,_][c_Symbol,-b_Symbol]:=Module[{a=DummyAs[c],d=DummyAs[b]},With[{met=MasterOf[covd1]},With[{invmet=Inv[met]},invmet[d,a]* xAct`xTensor`Private`changeRiemann[covd1,covd2,{delta,delta,delta},Riemann][-d,-b,-a,c]]]];
-changeCoRicci[covd1_?NonMetricityQ,covd2_,tmetric_][c_?UpIndexQ,b_?UpIndexQ]:=With[{vbundle=VBundleOfIndex[c],invmet=Inv[tmetric]},Module[{b1=DummyIn[vbundle]},invmet[b,b1]changeCoRicci[covd1,covd2,HELLO][c,-b1]]];
-changeCoRicci[covd1_?NonMetricityQ,covd2_,tmetric_][c_?DownIndexQ,b_?DownIndexQ]:=With[{vbundle=VBundleOfIndex[c]},Module[{c1=DummyIn[vbundle]},tmetric[-c1,c]changeCoRicci[covd1,covd2,HELLO][c1,-b]]];
-changeCoRicci[covd1_?NonMetricityQ,covd2_,tmetric_][c_?DownIndexQ,b_?UpIndexQ]:=With[{vbundle=VBundleOfIndex[c],invmet=Inv[tmetric]},Module[{c1=DummyIn[vbundle],b1=DummyIn[vbundle]},tmetric[c,-c1]invmet[b,b1]changeCoRicci[covd1,covd2,HELLO][c1,-b1]]];
-makeChangeCoRicciRule[covd2_,metric_][covd1_?NonMetricityQ]:=With[{coricci=CoRicci[covd1]},HoldPattern[coricci[inds__]]:>changeCoRicci[covd1,covd2,metric][inds]];
-makeChangeCoRicciRule[covd2_,metric_][covd1_?(!NonMetricityQ[#]&)]:={};
-(***** Homothetic tensor *****)
-changeHomothetic[covd1_?NonMetricityQ,covd2_,_][-c_Symbol,-b_Symbol]:=Module[{a=DummyAs[c]}, xAct`xTensor`Private`changeRiemann[covd1,covd2,{delta,delta,delta},Riemann][-b,-c,-a,a]];
-changeHomothetic[covd1_?NonMetricityQ,covd2_,tmetric_][c_?UpIndexQ,b_?UpIndexQ]:=With[{vbundle=VBundleOfIndex[c],invmet=Inv[tmetric]},Module[{b1=DummyIn[vbundle],c1=DummyIn[vbundle]},invmet[b,b1]invmet[c,c1]changeHomothetic[covd1,covd2,HELLO][-c1,-b1]]];
-changeHomothetic[covd1_?NonMetricityQ,covd2_,tmetric_][c_?UpIndexQ,b_?DownIndexQ]:=With[{vbundle=VBundleOfIndex[c],invmet=Inv[tmetric]},Module[{c1=DummyIn[vbundle]},invmet[c1,c]changeHomothetic[covd1,covd2,HELLO][-c1,-b]]];
-changeHomothetic[covd1_?NonMetricityQ,covd2_,tmetric_][c_?DownIndexQ,b_?UpIndexQ]:=With[{vbundle=VBundleOfIndex[c],invmet=Inv[tmetric]},Module[{b1=DummyIn[vbundle]},invmet[b,b1]changeHomothetic[covd1,covd2,HELLO][-c,-b1]]];
-makeChangeHomotheticRule[covd2_,metric_][covd1_]:={};
-makeChangeHomotheticRule[covd2_,metric_][covd1_?NonMetricityQ]:=With[{homothetic=Homothetic[covd1]},HoldPattern[homothetic[inds__]]:>changeHomothetic[covd1,covd2,metric][inds]];
-(****** Ricci Scalar *******)
-changeRicciScalar[covd1_,covd2_,metricofcovd1_][]:=Module[{a=DummyIn[TangentBundleOfCovD[covd1]],b=DummyIn[TangentBundleOfCovD[covd1]]},Scalar[Inv[metricofcovd1][a,b]changeRicci[covd1,covd2,HELLO][-a,-b]]];
-makeChangeRicciScalarRule[covd2_,Null][covd1_]:={};
-makeChangeRicciScalarRule[covd2_,metricofcovd1_][covd1_]:=With[{ricciscalar=RicciScalar[covd1]},HoldPattern[ricciscalar[]]:>changeRicciScalar[covd1,covd2,metricofcovd1][]];
-
-
-(* ::Input::Initialization:: *)
-xAct`xTensor`Private`makeChangeCurvatureRules[covd2_,metrics_][covd1_]:=With[{vbundles=VBundlesOfCovD[covd1]},
-Join[
-If[CurvatureQ[covd1,First[vbundles]],
-Flatten[{
-xAct`xTensor`Private`makeChangeRiemannRule[covd2,metrics,Riemann][covd1],
-xAct`xTensor`Private`makeChangeRicciRule[covd2,delta][covd1],
-makeChangeCoRicciRule[covd2,delta][covd1],
-makeChangeHomotheticRule[covd2,delta][covd1],
-xAct`xTensor`Private`makeChangeRicciScalarRule[covd2,MasterOf[covd1]][covd1]}
-],{}],
-If[Length[vbundles]>1&&CurvatureQ[covd1,Last[vbundles]],Flatten[{xAct`xTensor`Private`makeChangeRiemannRule[covd2,metrics,FRiemann][covd1]}],{}]]]
-
-
-(* ::Input::Initialization:: *)
-Unprotect[ChangeCurvature];
-ChangeCurvature[expr_,covd1_Symbol?CurvatureQ,covd2_:PD]:=If[xAct`xTensor`Private`CompatibleCovDsQ[covd1,covd2],ContractMetric[(SeparateMetric[expr])/.xAct`xTensor`Private`makeChangeCurvatureRules[covd2,xAct`xTensor`Private`metricsof[covd1]][covd1]],expr];
-Protect[ChangeCurvature];
-
-
-(* ::Input::Initialization:: *)
-xAct`xTensor`Private`changeRuleforfreepmQ[HoldPattern[LHS_Hold->RHS_Hold],index_]:=ReplaceIndex[LHS,index->UpIndex[index]]->With[{dummy=DummyAs[index]},xAct`xTensor`Private`putmetric[ReplaceIndex[RHS,index->dummy],metricOf[Sequence@@LHS],{UpIndex[index],-dummy}]];
-
-
-(* ::Input::Initialization:: *)
-Unprotect[SetProjected]
-SetProjected[tensor_?xTensorQ[inds__],projector_?xTensorQ]=.;
-SetProjected[tensor_?xTensorQ[inds__],projector_?xTensorQ[i1_,i2_]]=.;
-Proctect[SetProjected]
-
-
-(* ::Input::Initialization:: *)
-xTension["xMAG`xTensor`",DefTensor,"End"]:=xMAGxTensorDefTensor;
-
-
-(* ::Input::Initialization:: *)
-xMAGxTensorDefTensor[head_[indices___],dependencies_,sym_,options___]:=With[{pw=ProjectedWith/. CheckOptions[options] /. Options[DefTensor],
-	ov=OrthogonalTo/. CheckOptions[options] /. Options[DefTensor]},
-If[pw=!={}&&Equal@@(Head/@pw)&&MasterOf[head]===Null,MasterOf[head]^:=Evaluate[Head[pw[[1]]]]]
-];
-
-
-(* ::Input::Initialization:: *)
-xTension["xMAG`xPert`",DefMetricPerturbation,"End"]:=xMAGxPertDefMetricPerturbation;
-
-
-(* ::Input::Initialization:: *)
-xMAGxPertDefMetricPerturbation[metric_,pert_,param_,options___?OptionQ]:=MasterOf[pert]^:=metric;
-
-
-(* ::Input::Initialization:: *)
-xAct`xTras`Private`DefMetricVariation[metric_?MetricQ,per_,param_]:=Module[{var,M,vb,a,b},vb=VBundleOfMetric@metric;
-M=BaseOfVBundle@vb;
-{a,b}=GetIndicesOfVBundle[vb,2];
-If[Perturbation[metric[-a,-b]]=!=per[LI[1],-a,-b],Throw@Message[DefMetricVariation::error,"Metric perturbation does not match or is not defined."]];
-Block[{$DefInfoQ=False},DefTensor[var[-a,-b],M,Symmetric[{-a,-b}],Master->metric];];
-With[{cd=CovDOfMetric[metric],sqrt=Sqrt[SignDetOfMetric[metric] Determinant[metric][]]},
-
-(*We can now define a total variation (w.r.t.to metric) as follows.Note that we're only varying the metric and hence set variations of any other tensors to zero.*)VarDt[metric,expr_]:=Module[{mod},mod=MapIfPlus[ContractMetric,Expand@Perturbation[expr]];
-ExpandPerturbation@SameDummies@mod/.{per[LI[1],inds__]:>var[inds],p:(tensor_[LI[1],___])/;(xTensorQ[tensor]&&tensor=!=per&&PerturbationOrder[p]===1)->0}];
-(*The functional derivation is then defined as...*)
-VarD[metric[-c_Symbol,-d_Symbol],cd][expr_]:=Module[{mod,withvar,novar},mod=Expand@VarDt[metric,expr];
-novar=mod/.var[__]->0;
-withvar=mod-novar;
-VarD[var[-c,-d],cd][withvar]];
-VarD[metric[+c_Symbol,+d_Symbol],cd][expr_]:=Module[{mod,withvar,novar},mod=Expand@VarDt[metric,expr];
-novar=mod/.var[__]->0;
-withvar=mod-novar;
--VarD[var[c,d],cd][withvar]];
-(*And finally one handy function that varies Lagrangians,and thus takes care of the square root of the determinant.*)VarL[metric[inds__]][L_]:=VarL[metric[inds],cd][L];
-VarL[metric[inds__],cd][L_]:=VarD[metric[inds],cd][L]+ReplaceDummies[L] VarD[metric[inds],cd][sqrt]/sqrt;];];
-
-
-(* ::Input::Initialization:: *)
-VarD[tensor_[inds1___],der_][tensor_?xTensorQ[inds2___],rest_]=.
-
-
-(* ::Input::Initialization:: *)
-VarD[tensor_[inds1___],der_][tensor_?xTensorQ[inds2___],rest_]:=With[{clist=ChangeIndex/@IndexList[inds1],metric=MetricOfTensor[tensor]},
-ToCanonical[ImposeSymmetry[Inner[metric,clist,IndexList[inds2],Times],clist,SymmetryGroupOfTensor[tensor[inds1]]]rest,UseMetricOnVBundle->None]];
 
 
 (* ::Input::Initialization:: *)
