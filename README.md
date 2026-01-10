@@ -6,7 +6,9 @@
 The xMAG package is an extension of the xAct Bundle  http://www.xAct.es/ (José M. Martin-Garcia, GPL 2002-2026). To work properly this package needs the following packages 
 From the xAct bundle : xPerm, xTensor, Invar, SymManipulator, xPert, xTras. 
 Independent package coming with xBrauer bundle : SymmetricFunctions, BrauerAlgebra. 
-Note that SymmetricFunctions and BrauerAlgebra have to be installed as a Mathematica package not as an xAct package.
+Note that SymmetricFunctions and BrauerAlgebra have to be installed as Mathematica packages not as xAct packages.
+
+xMAG was created for studying metric-affine gravity theories within the xAct bundle.
 
 
 
